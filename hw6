@@ -1,0 +1,807 @@
+module MATRIXINV(
+    //OUTPUT
+    OUT,    OUT_VALID,
+    //INPUT
+    CLK,
+ RESET ,    IN,    IN_VALID
+);
+// INPUT & OUTPUT DECL
+input           CLK, RESET ,
+IN_VALID;
+input   signed[3:0] IN;
+output  reg     OUT_VALID;
+output  [14:0]  OUT;
+reg     signed[14:0]    OUT;
+reg     [8:0]   counter;
+reg     signed[14:0]    mul4;
+reg     signed[14:0]    add3,add1,add2,add4,add5,add6,det,
+                        o1,o2,o3,o4,o5,o6,o7,o8,o9;
+wire    signed[14:0]    sum1,sum2,sum3,product1,product2;
+reg     signed[3:0] A1,A2,A3,A4,A5,A6,A7,A8,A9,mul1,mul2,mul3;
+reg     signed[14:0]    P59,P68,P29,P38,P26,P35,P49,P67,P19,
+                        P37,P16,P34,P48,P57,P18,P27,P15,P24;
+reg     signed[14:0]    P159,P267,P348,P168,P249,P357;
+assign  product1
+= mul1 * mul2;
+assign  product2 = mul3 * mul4;
+assign  sum1 = add1 -
+add2;
+assign  sum2 = add3 - add4;
+assign  sum3 = add5 +
+add6;
+
+//counter
+always@(posedge CLK)begin
+    if(RESET ||
+counter==26)        counter <= 0;
+    else if(IN_VALID || counter)    counter <= counter+1;
+end
+//out_valid
+always@(posedge CLK)begin
+    if(RESET || counter==26
+)   OUT_VALID   <= 0;
+    else
+begin
+        case(counter)
+            15: OUT_VALID   <=1;
+            25: OUT_VALID   <=0;
+        endcase
+    end
+end
+//out
+always@(posedge
+CLK)begin
+    if(RESET || counter==26)    OUT <= 0;
+    else    begin
+        case(counter)
+            15: OUT <=det;
+            16: OUT <=o1;
+            17: OUT <=o2;
+            18: OUT <=o3;
+            19: OUT <=o4;
+            20: OUT <=o5;
+            21: OUT <=o6;
+            22: OUT <=o7;
+            23: OUT <=o8;
+            24: OUT <=o9;
+        endcase
+    end
+end
+//input
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A1  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                0:  A1  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A2  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                1:  A2  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A3  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                2:  A3  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A4  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                3:  A4  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A5  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                4:  A5  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A6  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                5:  A6  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A7  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                6:  A7  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A8  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                7:  A8  <=IN;
+            endcase
+        end
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        A9  <=0;
+    end
+
+    else    begin
+        if(IN_VALID)    begin
+            case(counter)
+                8:  A9  <=IN;
+            endcase
+        end
+    end
+end
+//mul1
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        mul1    <=0;
+    end
+
+    else    begin
+        case(counter)
+            3:  mul1    <=A2;
+            4:  mul1    <=A3;
+            5:  mul1    <=A2;
+            6:  mul1    <=A6;
+            7:  mul1    <=A6;
+            8:  mul1    <=A5;
+            9:  mul1    <=A2;
+            10: mul1    <=A3;
+            11: mul1    <=A4;
+            12: mul1    <=A1;
+            13: mul1    <=A3;
+            14: mul1    <=A1;
+            15: mul1    <=A3;
+            16: mul1    <=A4;
+            17: mul1    <=A5;
+            18: mul1    <=A1;
+            19: mul1    <=A2;
+            20: mul1    <=A1;
+        endcase
+    end
+end
+//mul2
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        mul2    <=0;
+    end
+
+    else    begin
+        case(counter)
+                3:  mul2    <=IN;
+                4:  mul2    <=IN;
+                5:  mul2    <=IN;
+                6:  mul2    <=IN;
+                7:  mul2    <=IN;
+                8:  mul2    <=IN;
+                9:  mul2    <=A9;
+                10: mul2    <=A8;
+                11: mul2    <=A9;
+                12: mul2    <=A9;
+                13: mul2    <=A7;
+                14: mul2    <=A6;
+                15: mul2    <=A4;
+                16: mul2    <=A8;
+                17: mul2    <=A7;
+                18: mul2    <=A8;
+                19: mul2    <=A7;
+                20: mul2    <=A5;
+        endcase
+    end
+end
+//mul3
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        mul3    <=0;
+    end
+
+    else    begin
+            case(counter)
+                6:  mul3    <=IN;
+                7:  mul3    <=A7;
+                8:  mul3    <=IN;
+                9:  mul3    <=A1;
+                10: mul3    <=A1;
+                11: mul3    <=A4;
+            endcase
+    end
+end
+//mul4
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        mul4    <=0;
+    end
+
+    else    begin
+            case(counter)
+                6:  mul4    <=product1;
+                7:  mul4    <=P35;
+                8:  mul4    <=P24;
+                9:  mul4    <=P68;
+                10: mul4    <=P59;
+                11: mul4    <=product1;
+            endcase
+    end
+end
+//product1
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P24 <=0;
+    end
+
+    else    begin
+            case(counter)
+                4:  P24 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P35 <=0;
+    end
+
+    else    begin
+            case(counter)
+                5:  P35 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P26 <=0;
+    end
+
+    else    begin
+            case(counter)
+                6:  P26 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P67 <=0;
+    end
+
+    else    begin
+            case(counter)
+                7:  P67 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P68 <=0;
+    end
+
+    else    begin
+            case(counter)
+                8:  P68 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P59 <=0;
+    end
+
+    else    begin
+            case(counter)
+                9:  P59 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P29 <=0;
+    end
+
+    else    begin
+            case(counter)
+                10: P29 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P38 <=0;
+    end
+
+    else    begin
+            case(counter)
+                11: P38 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P49 <=0;
+    end
+
+    else    begin
+            case(counter)
+                12: P49 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P19 <=0;
+    end
+
+    else    begin
+            case(counter)
+                13: P19 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P37 <=0;
+    end
+
+    else    begin
+            case(counter)
+                14: P37 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P16 <=0;
+    end
+
+    else    begin
+            case(counter)
+                15: P16 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P34 <=0;
+    end
+
+    else    begin
+            case(counter)
+                16: P34 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P48 <=0;
+    end
+
+    else    begin
+            case(counter)
+                17: P48 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P57 <=0;
+    end
+
+    else    begin
+            case(counter)
+                18: P57 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P18 <=0;
+    end
+
+    else    begin
+            case(counter)
+                19: P18 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P27 <=0;
+    end
+
+    else    begin
+            case(counter)
+                20: P27 <=product1;
+            endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P15 <=0;
+    end
+
+    else    begin
+        case(counter)
+            21: P15 <=product1;
+        endcase
+    end
+end
+//product2
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P267<=0;
+    end
+
+    else    begin
+        case(counter)
+            7:  P267<=product2;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P357<=0;
+    end
+
+    else    begin
+        case(counter)
+            8:  P357<=product2;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P249<=0;
+    end
+
+    else    begin
+        case(counter)
+            9:  P249<=product2;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P168<=0;
+    end
+
+    else    begin
+        case(counter)
+            10: P168<=product2;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P159<=0;
+    end
+
+    else    begin
+        case(counter)
+            11: P159<=product2;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        P348<=0;
+    end
+
+    else    begin
+        case(counter)
+            12: P348<=product2;
+        endcase
+    end
+end
+//add1
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add1    <=0;
+    end
+
+    else    begin
+        case(counter)
+            14: add1    <=P59;
+            15: add1    <=P38;
+            16: add1    <=P26;
+            17: add1    <=P67;
+            18: add1    <=P19;
+            19: add1    <=P34;
+            20: add1    <=P48;
+            21: add1    <=P27;
+            22: add1    <=P15;
+        endcase
+    end
+end
+//add2
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add2    <=0;
+    end
+
+    else    begin
+        case(counter)
+            14: add2    <=P68;
+            15: add2    <=P29;
+            16: add2    <=P35;
+            17: add2    <=P49;
+            18: add2    <=P37;
+            19: add2    <=P16;
+            20: add2    <=P57;
+            21: add2    <=P18;
+            22: add2    <=P24;
+        endcase
+    end
+end
+//sum1
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o1<=0;
+    end
+
+    else    begin
+        case(counter)
+            15: o1  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o2<=0;
+    end
+
+    else    begin
+        case(counter)
+            16: o2  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o3<=0;
+    end
+
+    else    begin
+        case(counter)
+            17: o3  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o4<=0;
+    end
+
+    else    begin
+        case(counter)
+            18: o4  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o5<=0;
+    end
+
+    else    begin
+        case(counter)
+            19: o5  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o6<=0;
+    end
+
+    else    begin
+        case(counter)
+            20: o6  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o7<=0;
+    end
+
+    else    begin
+        case(counter)
+            21: o7  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o8<=0;
+    end
+
+    else    begin
+        case(counter)
+            22: o8  <=sum1;
+        endcase
+    end
+end
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        o9<=0;
+    end
+
+    else    begin
+        case(counter)
+            23: o9  <=sum1;
+        endcase
+    end
+end
+//add3
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add3    <=0;
+    end
+
+    else    begin
+        case(counter)
+            9:  add3    <=P267;
+            10: add3    <=sum2;
+            11: add3    <=sum2;
+        endcase
+    end
+end
+//add4
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add4    <=0;
+    end
+
+    else    begin
+        case(counter)
+            9:  add4    <=P357;
+            10: add4    <=P249;
+            11: add4    <=P168;
+        endcase
+    end
+end
+//add5
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add5    <=0;
+    end
+
+    else    begin
+        case(counter)
+            12: add5    <=sum2;
+            13: add5    <=sum3;
+        endcase
+    end
+end
+//add6
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        add6    <=0;
+    end
+
+    else    begin
+        case(counter)
+            12: add6    <=P159;
+            13: add6    <=P348;
+        endcase
+    end
+end
+//det
+always@(posedge
+CLK) begin
+    if(RESET || counter==26)    begin
+        det <=0;
+    end
+
+    else    begin
+        case(counter)
+            14: det <=sum3;
+        endcase
+    end
+end
+endmodule
+
+

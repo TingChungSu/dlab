@@ -1,0 +1,1137 @@
+`timescale 1ns / 1ps
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+// Company:
+// Engineer:
+//
+//
+// Design Name:
+// Module Name:    example
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
+//
+// Dependencies:
+//
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+
+module top(
+    input CLK,
+    input RESET,
+    input KDAT,
+    input KCLK,
+    input  [3:0] SWH,
+    output [7:0]LED,
+    output hsync,
+    output vsync,
+    output R,
+    output G,
+    output B
+    );
+    reg ball_region,dirx,diry,brick1,brick2,brick3,brick4,brick5,brick6;
+    wire visible;
+    wire
+word,word1,word2,word3,word4,word5,word6,word1_region,word2_region,word3_regio\
+n,word4_region,word5_region,word6_region,atk_region;
+    wire [9:0]  row;
+    wire [9:0]  row_2;
+    wire [9:0]  row_3;
+    wire [9:0]  row_4;
+    wire [9:0]  row_5;
+    wire [9:0]  row_6;
+    wire [9:0]  row_7;
+    wire [10:0] col;
+    wire [10:0] col_2;
+    wire [10:0] col_3;
+    wire [10:0] col_4;
+    wire [10:0] col_5;
+    wire [10:0] col_6;
+    wire [10:0] col_7;
+
+    reg [2:0]  pic_cnt;
+    reg [2:0] long;
+    reg speed,speed1,speed2;
+    reg row_inc;
+    reg faceshot;
+    reg [2:0]  RGB_buff;
+    reg [9:0]  pixel_row;
+    reg [17:0] counters;
+    reg [16:0] counter;
+    reg [15:0] counterf;
+    reg [10:0] pixel_col;
+    reg [10:0] center_x , center_y;
+    reg [10:0] ball_x , ball_y;
+    reg [10:0] center_xx , center_yy;
+    reg [10:0] center_xx2 , center_yy2;
+    reg [10:0] center_xx3 , center_yy3;
+    reg [10:0] center_xx4 , center_yy4;
+    reg [10:0] center_xx5 , center_yy5;
+    reg [10:0] center_xx6 , center_yy6;
+    reg SWH_old;
+    reg longlonglong;
+    assign LED = 8'b11111111;
+    assign col = pixel_col - center_x;
+    assign col_2 = pixel_col - center_xx;
+    assign col_3 = pixel_col - center_xx2;
+    assign col_4 = pixel_col - center_xx3;
+    assign col_5 = pixel_col - center_xx4;
+    assign col_6 = pixel_col - center_xx5;
+    assign col_7 = pixel_col - center_xx6;
+    assign row = pixel_row - center_y;
+    assign row_2 = pixel_row - center_yy;
+    assign row_3 = pixel_row - center_yy2;
+    assign row_4 = pixel_row - center_yy3;
+    assign row_5 = pixel_row - center_yy4;
+    assign row_6 = pixel_row - center_yy5;
+    assign row_7 = pixel_row - center_yy6;
+    wire [7:0]DATA;
+    wire PS2_STATE;
+
+    keyboard kk( .clk(CLK), .reset(RESET), .KCLK(KCLK), .KDAT(KDAT),
+.DATA(DATA));
+    BRICK word_1(.word(word1),.pic_cnt(brick1),.row(row[6:3]), .col(col[6:3]),
+.reset(RESET));
+    BRICK word_2(.word(word2),.pic_cnt(brick2),.row(row_3[6:3]),
+.col(col_3[6:3]), .reset(RESET));
+    BRICK word_3(.word(word3),.pic_cnt(brick3),.row(row_4[6:3]),
+.col(col_4[6:3]), .reset(RESET));
+    BRICK word_4(.word(word4),.pic_cnt(brick4),.row(row_5[6:3]),
+.col(col_5[6:3]), .reset(RESET));
+    BRICK word_5(.word(word5),.pic_cnt(brick5),.row(row_6[6:3]),
+.col(col_6[6:3]), .reset(RESET));
+    BRICK word_6(.word(word6),.pic_cnt(brick6),.row(row_7[6:3]),
+.col(col_7[6:3]), .reset(RESET));
+    ATK word_7(.word(word),.pic_cnt(longlonglong),.row(row_2[6:3]),
+.col(col_2[6:3]), .reset(RESET));
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) counter <= 0;
+        else counter<=counter+1;
+    end
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) counters <= 0;
+        else counters<=counters+1;
+    end
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) counterf <= 0;
+        else counterf<=counterf+1;
+    end
+    always@(posedge CLK)begin
+        if(RESET)   SWH_old <= SWH[0];
+        else SWH_old <= SWH[0];
+    end
+//shoot
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) faceshot <= 0;
+        else if(DATA==8'h1D) faceshot <=1;
+        else faceshot <=faceshot;
+    end
+
+//ball_region
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) ball_region <= 0;
+        else
+if(((pixel_col-ball_x)*(pixel_col-ball_x)+(pixel_row-ball_y)*(pixel_row-ball_y\
+))<50)
+ball_region <=1;
+        else ball_region <=0;
+    end
+//======choose your pic num.=========
+
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET ) pic_cnt <= 0;
+        else if(!SWH[0]) pic_cnt <=0;
+        else if(SWH[0]) pic_cnt <=1;
+    end
+
+//===========Region==================
+
+    assign word1_region = ( pixel_col >= center_x ) & ( pixel_col < center_x +
+128 ) &
+                         ( pixel_row >= center_y ) & ( pixel_row < center_y + \
+128 );
+    assign word2_region = ( pixel_col >= center_xx2 ) & ( pixel_col < center_xx2
++ 128 ) &
+                         ( pixel_row >= center_yy2 ) & ( pixel_row < center_yy\
+2 + 128 );
+    assign word3_region = ( pixel_col >= center_xx3 ) & ( pixel_col < center_xx3
++ 128 ) &
+                         ( pixel_row >= center_yy3 ) & ( pixel_row < center_yy\
+3 + 128 );
+    assign word4_region = ( pixel_col >= center_xx4 ) & ( pixel_col < center_xx4
++ 128 ) &
+                         ( pixel_row >= center_yy4 ) & ( pixel_row < center_yy\
+4 + 128 );
+    assign word5_region = ( pixel_col >= center_xx5 ) & ( pixel_col < center_xx5
++ 128 ) &
+                         ( pixel_row >= center_yy5 ) & ( pixel_row < center_yy\
+5 + 128 );
+    assign word6_region = ( pixel_col >= center_xx6 ) & ( pixel_col < center_xx6
++ 128 ) &
+                         ( pixel_row >= center_yy6 ) & ( pixel_row < center_yy\
+6 + 128 );
+    assign atk_region = ( pixel_col >= center_xx ) & ( pixel_col < center_xx +
+128 ) &
+                         ( pixel_row >= center_yy ) & ( pixel_row < center_yy \
++ 128 );
+
+    //-------------------//
+    //   WORD POSITION   //
+    //-------------------//
+
+
+    always@( posedge CLK or posedge RESET) begin
+        if( RESET ) RGB_buff <= 3'b000;
+        else if( ball_region ) RGB_buff <= { 1'b0, 1'b1, 1'b1 };
+        else if( atk_region & word ) RGB_buff <= { 1'b1, 1'b1, 1'b1 };
+        else if( word1_region & word1 ) RGB_buff <= { 1'b1, 1'b0, 1'b0 };
+        else if( word2_region & word2 ) RGB_buff <= { 1'b0, 1'b1, 1'b0 };
+        else if( word3_region & word3 ) RGB_buff <= { 1'b0, 1'b0, 1'b1 };
+        else if( word4_region & word4 ) RGB_buff <= { 1'b1, 1'b1, 1'b0 };
+        else if( word5_region & word5 ) RGB_buff <= { 1'b0, 1'b1, 1'b1 };
+        else if( word6_region & word6 ) RGB_buff <= { 1'b1, 1'b0, 1'b1 };
+
+        //Modify
+
+        else RGB_buff <= 3'b000;
+    end
+
+    // RGB
+
+    assign R = ( visible )? RGB_buff[2] : 0;
+    assign G = ( visible )? RGB_buff[1] : 0;
+    assign B = ( visible )? RGB_buff[0] : 0;
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET )begin
+            brick1 <= 0;//set your location
+            speed1 <= 0;
+        end
+        else if(faceshot && ((ball_y<=151 && ball_y>=23 && ball_x == 232)||
+(ball_y==151 && ball_x<=232 && ball_x>=104)))begin
+            brick1<=1;
+            speed1<=1;
+        end
+        else brick1<=brick1;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET )begin
+            brick2 <= 0;//set your location
+            speed2 <= 0;
+        end
+        else if(faceshot && ((ball_y<=280 && ball_y>=151 && ball_x == 232)||
+(ball_y==151 && ball_x<=232 && ball_x>=104)|| (ball_y==280 && ball_x<=232 &&
+ball_x>=104)))begin
+            brick2<=1;
+            speed2<=1;
+        end
+        else brick2<=brick2;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET )begin
+            brick3 <= 0;//set your location
+            longlonglong <= 0;
+        end
+        else if(faceshot && ((ball_y<=409 && ball_y>=280 && ball_x == 232)||
+(ball_y==280 && ball_x<=232 && ball_x>=104)|| (ball_y==409 && ball_x<=232 &&
+ball_x>=104)))begin
+            brick3<=1;
+            longlonglong <= 1;
+        end
+        else brick3<=brick3;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) brick4 <= 0;//set your location
+        else if(faceshot && ((ball_y<=151 && ball_y>=23 && ball_x == 776)||
+(ball_y==151 && ball_x<=904 && ball_x>=776)))begin
+            brick4<=1;
+        end
+        else brick4<=brick4;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) brick5 <= 0;//set your location
+        else if(faceshot && ((ball_y<=280 && ball_y>=151 && ball_x == 776)||
+(ball_y==151 && ball_x<=904 && ball_x>=776)|| (ball_y==280 && ball_x<=904 &&
+ball_x>=776)))begin
+            brick5<=1;
+        end
+        else brick5<=brick5;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) brick6 <= 0;//set your location
+        else if(faceshot && ((ball_y<=409 && ball_y>=280 && ball_x == 776)||
+(ball_y==280 && ball_x<=904 && ball_x>=776)|| (ball_y==409 && ball_x<=904 &&
+ball_x>=776)))begin
+            brick6<=1;
+        end
+        else brick6<=brick6;
+    end
+
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) dirx <= 1;//set your location
+        else if(brick1==0 &&ball_y<=151 && ball_y>=23 && ball_x == 232) dirx<=0;
+        else if(brick2==0 &&ball_y<=280 && ball_y>=151 && ball_x == 232)dirx<=0;
+        else if(brick3==0 &&ball_y<=409 && ball_y>=280 && ball_x == 232)dirx<=0;
+        else if(brick4==0 &&ball_y<=151 && ball_y>=23 && ball_x == 776) dirx<=1;
+        else if(brick5==0 &&ball_y<=280 && ball_y>=151 && ball_x == 776)dirx<=1;
+        else if(brick6==0 &&ball_y<=409 && ball_y>=280 && ball_x == 776)dirx<=1;
+        else if (ball_x<=104)   dirx<=0;
+        else if (ball_x>=904)   dirx<=1;
+        else dirx<=dirx;
+    end
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) diry <= 1;//set your location
+        else if (brick1==0 && ball_y==151 && ball_x<=232 && ball_x>=104)diry<=0;
+        else if (brick2==0 && ball_y==151 && ball_x<=232 && ball_x>=104)diry<=1;
+        else if (brick2==0 && ball_y==280 && ball_x<=232 && ball_x>=104)diry<=0;
+        else if (brick3==0 && ball_y==280 && ball_x<=232 && ball_x>=104)diry<=1;
+        else if (brick3==0 && ball_y==409 && ball_x<=232 && ball_x>=104)diry<=0;
+        else if (brick4==0 && ball_y==151 && ball_x<=904 && ball_x>=776)diry<=0;
+        else if (brick5==0 && ball_y==151 && ball_x<=904 && ball_x>=776)diry<=1;
+        else if (brick5==0 && ball_y==280 && ball_x<=904 && ball_x>=776)diry<=0;
+        else if (brick6==0 && ball_y==280 && ball_x<=904 && ball_x>=776)diry<=1;
+        else if (brick6==0 && ball_y==409 && ball_x<=904 && ball_x>=776)diry<=0;
+        else if (ball_y<=23)    diry<=0;
+        else if (ball_y>=590)   diry<=1;
+        else diry<=diry;
+    end
+
+//speed
+     always @(posedge CLK or posedge RESET)begin
+        if( RESET ) speed <= 0;//set your location
+        else if(speed2 && counters==0)speed <= 1;
+        else if(speed1 && counterf==0)speed <= 1;
+        else if(speed1==0 && speed2==0 && counter==0)speed <= 1;
+        else speed<=0;
+    end
+
+
+    //===================Location===========================
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) ball_y <= 590;//set your location
+        else if(faceshot && ball_y>23 && diry && speed)begin
+            ball_y<=ball_y-1;
+        end
+        else if(faceshot && ball_y<590 && diry==0 && speed)begin
+            ball_y<=ball_y+1;
+        end
+        else ball_y<=ball_y;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) ball_x <= 514;//set your location
+        else if(faceshot && ball_x>104 && dirx && speed)begin
+            ball_x<=ball_x-1;
+        end
+        else if(faceshot && ball_x<904 && dirx==0 && speed)begin
+            ball_x<=ball_x+1;
+        end
+        else if(faceshot ==0 && ball_x>168 &&  DATA==8'h1C &&
+counter==0)ball_x<=ball_x-1;
+        else if(faceshot ==0 && ball_x<840 &&  DATA==8'h23 &&
+counter==0)ball_x<=ball_x+1;
+    end
+
+
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_y <= 23;//set your location
+        else center_y<=center_y;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_x <= 104;//set your location
+        else center_x<=center_x;
+    end
+    //2
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy2 <= 152;//set your location
+        else center_yy2<=center_yy2;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx2 <= 104;//set your location
+        else center_xx2<=center_xx2;
+    end
+    //3
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy3 <= 281;//set your location
+        else center_yy3<=center_yy3;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx3 <= 104;//set your location
+        else center_xx3<=center_xx3;
+    end
+    //4
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy4 <= 23;//set your location
+        else center_yy4<=center_yy4;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx4 <= 776;//set your location
+        else center_xx4<=center_xx4;
+    end
+    //5
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy5 <= 152;//set your location
+        else center_yy5<=center_yy5;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx5 <= 776;//set your location
+        else center_xx5<=center_xx5;
+    end
+    //6
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy6 <= 281;//set your location
+        else center_yy6<=center_yy6;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx6 <= 776;//set your location
+        else center_xx6<=center_xx6;
+    end
+
+
+
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET ) center_yy <= 495;//set your location
+        else center_yy<=center_yy;
+    end
+
+    always @(posedge CLK or posedge RESET)begin
+        if( RESET) center_xx <= 450;//set your location
+        else if(center_xx>104 &&  DATA==8'h1C && counter==0)center_xx<=center_\
+xx-1;
+        else if(center_xx<776 &&  DATA==8'h23 && counter==0)center_xx<=center_\
+xx+1;
+    end
+
+
+
+    //---------------//
+    //     SCAN      //
+    //---------------//
+
+    always@( posedge CLK ) begin
+        if( RESET ) pixel_col <=0;
+        else if( pixel_col == 1039 ) pixel_col <= 0;
+        else pixel_col <= pixel_col + 1;
+    end
+
+    always@( posedge CLK ) begin
+        if( RESET ) row_inc <= 0;
+        else if( pixel_col == 1039 ) row_inc <= 1;
+        else row_inc <= 0;
+    end
+
+    always@( posedge CLK )begin
+        if( RESET ) pixel_row <= 0;
+        else if ( pixel_row == 665 ) pixel_row <= 0;
+        else if ( row_inc ) pixel_row <= pixel_row + 1;
+        else pixel_row <= pixel_row;
+    end
+
+    assign hsync = ~( (pixel_col >= 919) & (pixel_col < 1039) );
+    assign vsync = ~( (pixel_row >= 659) & (pixel_row < 665) ) ;
+    assign visible = ( (pixel_col > 104) & (pixel_col < 904 ) & (pixel_row > 23)
+& (pixel_row < 623) );
+
+
+endmodule
+
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//
+      //
+//                              WORD
+      //
+//
+      //
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+module ATK(
+  //output
+  word,
+  //input
+  pic_cnt,row, col, reset);
+input [3:0] row;
+input [3:0] col;
+input pic_cnt;
+input reset ;
+output word;
+reg word;
+reg [15:0] line_a,line_b,line_c,line_d,line_e,line_f,line_g,line_h,
+           line_i,line_j,line_k,line_l,line_m,line_n,line_o,line_p;
+always @ (pic_cnt) begin
+    case( pic_cnt )
+        0: begin
+            line_a <= 16'b0000000000000000;
+            line_b <= 16'b0000000000000000;
+            line_c <= 16'b0000000000000000;
+            line_d <= 16'b0000000000000000;
+            line_e <= 16'b0000000000000000;
+            line_f <= 16'b0000000000000000;
+            line_g <= 16'b0000000000000000;
+            line_h <= 16'b0000000000000000;
+            line_i <= 16'b0000000000000000;
+            line_j <= 16'b0000000000000000;
+            line_k <= 16'b0000000000000000;
+            line_l <= 16'b0000000000000000;
+            line_m <= 16'b0000000000000000;
+            line_n <= 16'b0000111111110000;
+            line_o <= 16'b0000011111100000;
+            line_p <= 16'b0000000000000000;
+           end
+        1:begin
+            line_a <= 16'b0000000000000000;
+            line_b <= 16'b0000000000000000;
+            line_c <= 16'b0000000000000000;
+            line_d <= 16'b0000000000000000;
+            line_e <= 16'b0000000000000000;
+            line_f <= 16'b0000000000000000;
+            line_g <= 16'b0000000000000000;
+            line_h <= 16'b0000000000000000;
+            line_i <= 16'b0000000000000000;
+            line_j <= 16'b0000000000000000;
+            line_k <= 16'b0000000000000000;
+            line_l <= 16'b0000000000000000;
+            line_m <= 16'b0000000000000000;
+            line_n <= 16'b1111111111111111;
+            line_o <= 16'b0111111111111110;
+            line_p <= 16'b0000000000000000;
+            end
+    endcase
+end
+always @ (*) begin
+    case( { row, col } )
+        8'b0000_0000: word <= line_a[15];
+        8'b0000_0001: word <= line_a[14];
+        8'b0000_0010: word <= line_a[13];
+        8'b0000_0011: word <= line_a[12];
+        8'b0000_0100: word <= line_a[11];
+        8'b0000_0101: word <= line_a[10];
+        8'b0000_0110: word <= line_a[9];
+        8'b0000_0111: word <= line_a[8];
+        8'b0000_1000: word <= line_a[7];
+        8'b0000_1001: word <= line_a[6];
+        8'b0000_1010: word <= line_a[5];
+        8'b0000_1011: word <= line_a[4];
+        8'b0000_1100: word <= line_a[3];
+        8'b0000_1101: word <= line_a[2];
+        8'b0000_1110: word <= line_a[1];
+        8'b0000_1111: word <= line_a[0];
+
+        8'b0001_0000: word <= line_b[15];
+        8'b0001_0001: word <= line_b[14];
+        8'b0001_0010: word <= line_b[13];
+        8'b0001_0011: word <= line_b[12];
+        8'b0001_0100: word <= line_b[11];
+        8'b0001_0101: word <= line_b[10];
+        8'b0001_0110: word <= line_b[9];
+        8'b0001_0111: word <= line_b[8];
+        8'b0001_1000: word <= line_b[7];
+        8'b0001_1001: word <= line_b[6];
+        8'b0001_1010: word <= line_b[5];
+        8'b0001_1011: word <= line_b[4];
+        8'b0001_1100: word <= line_b[3];
+        8'b0001_1101: word <= line_b[2];
+        8'b0001_1110: word <= line_b[1];
+        8'b0001_1111: word <= line_b[0];
+
+        8'b0010_0000: word <= line_c[15];
+        8'b0010_0001: word <= line_c[14];
+        8'b0010_0010: word <= line_c[13];
+        8'b0010_0011: word <= line_c[12];
+        8'b0010_0100: word <= line_c[11];
+        8'b0010_0101: word <= line_c[10];
+        8'b0010_0110: word <= line_c[9];
+        8'b0010_0111: word <= line_c[8];
+        8'b0010_1000: word <= line_c[7];
+        8'b0010_1001: word <= line_c[6];
+        8'b0010_1010: word <= line_c[5];
+        8'b0010_1011: word <= line_c[4];
+        8'b0010_1100: word <= line_c[3];
+        8'b0010_1101: word <= line_c[2];
+        8'b0010_1110: word <= line_c[1];
+        8'b0010_1111: word <= line_c[0];
+
+        8'b0011_0000: word <= line_d[15];
+        8'b0011_0001: word <= line_d[14];
+        8'b0011_0010: word <= line_d[13];
+        8'b0011_0011: word <= line_d[12];
+        8'b0011_0100: word <= line_d[11];
+        8'b0011_0101: word <= line_d[10];
+        8'b0011_0110: word <= line_d[9];
+        8'b0011_0111: word <= line_d[8];
+        8'b0011_1000: word <= line_d[7];
+        8'b0011_1001: word <= line_d[6];
+        8'b0011_1010: word <= line_d[5];
+        8'b0011_1011: word <= line_d[4];
+        8'b0011_1100: word <= line_d[3];
+        8'b0011_1101: word <= line_d[2];
+        8'b0011_1110: word <= line_d[1];
+        8'b0011_1111: word <= line_d[0];
+
+        8'b0100_0000: word <= line_e[15];
+        8'b0100_0001: word <= line_e[14];
+        8'b0100_0010: word <= line_e[13];
+        8'b0100_0011: word <= line_e[12];
+        8'b0100_0100: word <= line_e[11];
+        8'b0100_0101: word <= line_e[10];
+        8'b0100_0110: word <= line_e[9];
+        8'b0100_0111: word <= line_e[8];
+        8'b0100_1000: word <= line_e[7];
+        8'b0100_1001: word <= line_e[6];
+        8'b0100_1010: word <= line_e[5];
+        8'b0100_1011: word <= line_e[4];
+        8'b0100_1100: word <= line_e[3];
+        8'b0100_1101: word <= line_e[2];
+        8'b0100_1110: word <= line_e[1];
+        8'b0100_1111: word <= line_e[0];
+
+        8'b0101_0000: word <= line_f[15];
+        8'b0101_0001: word <= line_f[14];
+        8'b0101_0010: word <= line_f[13];
+        8'b0101_0011: word <= line_f[12];
+        8'b0101_0100: word <= line_f[11];
+        8'b0101_0101: word <= line_f[10];
+        8'b0101_0110: word <= line_f[9];
+        8'b0101_0111: word <= line_f[8];
+        8'b0101_1000: word <= line_f[7];
+        8'b0101_1001: word <= line_f[6];
+        8'b0101_1010: word <= line_f[5];
+        8'b0101_1011: word <= line_f[4];
+        8'b0101_1100: word <= line_f[3];
+        8'b0101_1101: word <= line_f[2];
+        8'b0101_1110: word <= line_f[1];
+        8'b0101_1111: word <= line_f[0];
+
+        8'b0110_0000: word <= line_g[15];
+        8'b0110_0001: word <= line_g[14];
+        8'b0110_0010: word <= line_g[13];
+        8'b0110_0011: word <= line_g[12];
+        8'b0110_0100: word <= line_g[11];
+        8'b0110_0101: word <= line_g[10];
+        8'b0110_0110: word <= line_g[9];
+        8'b0110_0111: word <= line_g[8];
+        8'b0110_1000: word <= line_g[7];
+        8'b0110_1001: word <= line_g[6];
+        8'b0110_1010: word <= line_g[5];
+        8'b0110_1011: word <= line_g[4];
+        8'b0110_1100: word <= line_g[3];
+        8'b0110_1101: word <= line_g[2];
+        8'b0110_1110: word <= line_g[1];
+        8'b0110_1111: word <= line_g[0];
+
+        8'b0111_0000: word <= line_h[15];
+        8'b0111_0001: word <= line_h[14];
+        8'b0111_0010: word <= line_h[13];
+        8'b0111_0011: word <= line_h[12];
+        8'b0111_0100: word <= line_h[11];
+        8'b0111_0101: word <= line_h[10];
+        8'b0111_0110: word <= line_h[9];
+        8'b0111_0111: word <= line_h[8];
+        8'b0111_1000: word <= line_h[7];
+        8'b0111_1001: word <= line_h[6];
+        8'b0111_1010: word <= line_h[5];
+        8'b0111_1011: word <= line_h[4];
+        8'b0111_1100: word <= line_h[3];
+        8'b0111_1101: word <= line_h[2];
+        8'b0111_1110: word <= line_h[1];
+        8'b0111_1111: word <= line_h[0];
+
+        8'b1000_0000: word <= line_i[15];
+        8'b1000_0001: word <= line_i[14];
+        8'b1000_0010: word <= line_i[13];
+        8'b1000_0011: word <= line_i[12];
+        8'b1000_0100: word <= line_i[11];
+        8'b1000_0101: word <= line_i[10];
+        8'b1000_0110: word <= line_i[9];
+        8'b1000_0111: word <= line_i[8];
+        8'b1000_1000: word <= line_i[7];
+        8'b1000_1001: word <= line_i[6];
+        8'b1000_1010: word <= line_i[5];
+        8'b1000_1011: word <= line_i[4];
+        8'b1000_1100: word <= line_i[3];
+        8'b1000_1101: word <= line_i[2];
+        8'b1000_1110: word <= line_i[1];
+        8'b1000_1111: word <= line_i[0];
+
+        8'b1001_0000: word <= line_j[15];
+        8'b1001_0001: word <= line_j[14];
+        8'b1001_0010: word <= line_j[13];
+        8'b1001_0011: word <= line_j[12];
+        8'b1001_0100: word <= line_j[11];
+        8'b1001_0101: word <= line_j[10];
+        8'b1001_0110: word <= line_j[9];
+        8'b1001_0111: word <= line_j[8];
+        8'b1001_1000: word <= line_j[7];
+        8'b1001_1001: word <= line_j[6];
+        8'b1001_1010: word <= line_j[5];
+        8'b1001_1011: word <= line_j[4];
+        8'b1001_1100: word <= line_j[3];
+        8'b1001_1101: word <= line_j[2];
+        8'b1001_1110: word <= line_j[1];
+        8'b1001_1111: word <= line_j[0];
+
+        8'b1010_0000: word <= line_k[15];
+        8'b1010_0001: word <= line_k[14];
+        8'b1010_0010: word <= line_k[13];
+        8'b1010_0011: word <= line_k[12];
+        8'b1010_0100: word <= line_k[11];
+        8'b1010_0101: word <= line_k[10];
+        8'b1010_0110: word <= line_k[9];
+        8'b1010_0111: word <= line_k[8];
+        8'b1010_1000: word <= line_k[7];
+        8'b1010_1001: word <= line_k[6];
+        8'b1010_1010: word <= line_k[5];
+        8'b1010_1011: word <= line_k[4];
+        8'b1010_1100: word <= line_k[3];
+        8'b1010_1101: word <= line_k[2];
+        8'b1010_1110: word <= line_k[1];
+        8'b1010_1111: word <= line_k[0];
+
+        8'b1011_0000: word <= line_l[15];
+        8'b1011_0001: word <= line_l[14];
+        8'b1011_0010: word <= line_l[13];
+        8'b1011_0011: word <= line_l[12];
+        8'b1011_0100: word <= line_l[11];
+        8'b1011_0101: word <= line_l[10];
+        8'b1011_0110: word <= line_l[9];
+        8'b1011_0111: word <= line_l[8];
+        8'b1011_1000: word <= line_l[7];
+        8'b1011_1001: word <= line_l[6];
+        8'b1011_1010: word <= line_l[5];
+        8'b1011_1011: word <= line_l[4];
+        8'b1011_1100: word <= line_l[3];
+        8'b1011_1101: word <= line_l[2];
+        8'b1011_1110: word <= line_l[1];
+        8'b1011_1111: word <= line_l[0];
+
+        8'b1100_0000: word <= line_m[15];
+        8'b1100_0001: word <= line_m[14];
+        8'b1100_0010: word <= line_m[13];
+        8'b1100_0011: word <= line_m[12];
+        8'b1100_0100: word <= line_m[11];
+        8'b1100_0101: word <= line_m[10];
+        8'b1100_0110: word <= line_m[9];
+        8'b1100_0111: word <= line_m[8];
+        8'b1100_1000: word <= line_m[7];
+        8'b1100_1001: word <= line_m[6];
+        8'b1100_1010: word <= line_m[5];
+        8'b1100_1011: word <= line_m[4];
+        8'b1100_1100: word <= line_m[3];
+        8'b1100_1101: word <= line_m[2];
+        8'b1100_1110: word <= line_m[1];
+        8'b1100_1111: word <= line_m[0];
+
+        8'b1101_0000: word <= line_n[15];
+        8'b1101_0001: word <= line_n[14];
+        8'b1101_0010: word <= line_n[13];
+        8'b1101_0011: word <= line_n[12];
+        8'b1101_0100: word <= line_n[11];
+        8'b1101_0101: word <= line_n[10];
+        8'b1101_0110: word <= line_n[9];
+        8'b1101_0111: word <= line_n[8];
+        8'b1101_1000: word <= line_n[7];
+        8'b1101_1001: word <= line_n[6];
+        8'b1101_1010: word <= line_n[5];
+        8'b1101_1011: word <= line_n[4];
+        8'b1101_1100: word <= line_n[3];
+        8'b1101_1101: word <= line_n[2];
+        8'b1101_1110: word <= line_n[1];
+        8'b1101_1111: word <= line_n[0];
+
+        8'b1110_0000: word <= line_o[15];
+        8'b1110_0001: word <= line_o[14];
+        8'b1110_0010: word <= line_o[13];
+        8'b1110_0011: word <= line_o[12];
+        8'b1110_0100: word <= line_o[11];
+        8'b1110_0101: word <= line_o[10];
+        8'b1110_0110: word <= line_o[9];
+        8'b1110_0111: word <= line_o[8];
+        8'b1110_1000: word <= line_o[7];
+        8'b1110_1001: word <= line_o[6];
+        8'b1110_1010: word <= line_o[5];
+        8'b1110_1011: word <= line_o[4];
+        8'b1110_1100: word <= line_o[3];
+        8'b1110_1101: word <= line_o[2];
+        8'b1110_1110: word <= line_o[1];
+        8'b1110_1111: word <= line_o[0];
+
+        8'b1111_0000: word <= line_p[15];
+        8'b1111_0001: word <= line_p[14];
+        8'b1111_0010: word <= line_p[13];
+        8'b1111_0011: word <= line_p[12];
+        8'b1111_0100: word <= line_p[11];
+        8'b1111_0101: word <= line_p[10];
+        8'b1111_0110: word <= line_p[9];
+        8'b1111_0111: word <= line_p[8];
+        8'b1111_1000: word <= line_p[7];
+        8'b1111_1001: word <= line_p[6];
+        8'b1111_1010: word <= line_p[5];
+        8'b1111_1011: word <= line_p[4];
+        8'b1111_1100: word <= line_p[3];
+        8'b1111_1101: word <= line_p[2];
+        8'b1111_1110: word <= line_p[1];
+        8'b1111_1111: word <= line_p[0];
+    endcase
+end
+endmodule
+
+module BRICK(
+  //output
+  word,
+  //input
+  pic_cnt,row, col, reset);
+input [3:0] row;
+input [3:0] col;
+input pic_cnt;
+input reset ;
+output word;
+reg word;
+reg [15:0] line_a,line_b,line_c,line_d,line_e,line_f,line_g,line_h,
+           line_i,line_j,line_k,line_l,line_m,line_n,line_o,line_p;
+always @ (pic_cnt) begin
+    case( pic_cnt )
+        0: begin
+            line_a <= 16'b1111111111111111;
+            line_b <= 16'b1111111111111111;
+            line_c <= 16'b1111111111111111;
+            line_d <= 16'b1111111111111111;
+            line_e <= 16'b1111111111111111;
+            line_f <= 16'b1111111111111111;
+            line_g <= 16'b1111111111111111;
+            line_h <= 16'b1111111111111111;
+            line_i <= 16'b1111111111111111;
+            line_j <= 16'b1111111111111111;
+            line_k <= 16'b1111111111111111;
+            line_l <= 16'b1111111111111111;
+            line_m <= 16'b1111111111111111;
+            line_n <= 16'b1111111111111111;
+            line_o <= 16'b1111111111111111;
+            line_p <= 16'b1111111111111111;
+           end
+        1:begin
+            line_a <= 16'b0000000000000000;
+            line_b <= 16'b0000000000000000;
+            line_c <= 16'b0000000000000000;
+            line_d <= 16'b0000000000000000;
+            line_e <= 16'b0000000000000000;
+            line_f <= 16'b0000000000000000;
+            line_g <= 16'b0000000000000000;
+            line_h <= 16'b0000000000000000;
+            line_i <= 16'b0000000000000000;
+            line_j <= 16'b0000000000000000;
+            line_k <= 16'b0000000000000000;
+            line_l <= 16'b0000000000000000;
+            line_m <= 16'b0000000000000000;
+            line_n <= 16'b0000000000000000;
+            line_o <= 16'b0000000000000000;
+            line_p <= 16'b0000000000000000;
+            end
+    endcase
+end
+always @ (*) begin
+    case( { row, col } )
+        8'b0000_0000: word <= line_a[15];
+        8'b0000_0001: word <= line_a[14];
+        8'b0000_0010: word <= line_a[13];
+        8'b0000_0011: word <= line_a[12];
+        8'b0000_0100: word <= line_a[11];
+        8'b0000_0101: word <= line_a[10];
+        8'b0000_0110: word <= line_a[9];
+        8'b0000_0111: word <= line_a[8];
+        8'b0000_1000: word <= line_a[7];
+        8'b0000_1001: word <= line_a[6];
+        8'b0000_1010: word <= line_a[5];
+        8'b0000_1011: word <= line_a[4];
+        8'b0000_1100: word <= line_a[3];
+        8'b0000_1101: word <= line_a[2];
+        8'b0000_1110: word <= line_a[1];
+        8'b0000_1111: word <= line_a[0];
+
+        8'b0001_0000: word <= line_b[15];
+        8'b0001_0001: word <= line_b[14];
+        8'b0001_0010: word <= line_b[13];
+        8'b0001_0011: word <= line_b[12];
+        8'b0001_0100: word <= line_b[11];
+        8'b0001_0101: word <= line_b[10];
+        8'b0001_0110: word <= line_b[9];
+        8'b0001_0111: word <= line_b[8];
+        8'b0001_1000: word <= line_b[7];
+        8'b0001_1001: word <= line_b[6];
+        8'b0001_1010: word <= line_b[5];
+        8'b0001_1011: word <= line_b[4];
+        8'b0001_1100: word <= line_b[3];
+        8'b0001_1101: word <= line_b[2];
+        8'b0001_1110: word <= line_b[1];
+        8'b0001_1111: word <= line_b[0];
+
+        8'b0010_0000: word <= line_c[15];
+        8'b0010_0001: word <= line_c[14];
+        8'b0010_0010: word <= line_c[13];
+        8'b0010_0011: word <= line_c[12];
+        8'b0010_0100: word <= line_c[11];
+        8'b0010_0101: word <= line_c[10];
+        8'b0010_0110: word <= line_c[9];
+        8'b0010_0111: word <= line_c[8];
+        8'b0010_1000: word <= line_c[7];
+        8'b0010_1001: word <= line_c[6];
+        8'b0010_1010: word <= line_c[5];
+        8'b0010_1011: word <= line_c[4];
+        8'b0010_1100: word <= line_c[3];
+        8'b0010_1101: word <= line_c[2];
+        8'b0010_1110: word <= line_c[1];
+        8'b0010_1111: word <= line_c[0];
+
+        8'b0011_0000: word <= line_d[15];
+        8'b0011_0001: word <= line_d[14];
+        8'b0011_0010: word <= line_d[13];
+        8'b0011_0011: word <= line_d[12];
+        8'b0011_0100: word <= line_d[11];
+        8'b0011_0101: word <= line_d[10];
+        8'b0011_0110: word <= line_d[9];
+        8'b0011_0111: word <= line_d[8];
+        8'b0011_1000: word <= line_d[7];
+        8'b0011_1001: word <= line_d[6];
+        8'b0011_1010: word <= line_d[5];
+        8'b0011_1011: word <= line_d[4];
+        8'b0011_1100: word <= line_d[3];
+        8'b0011_1101: word <= line_d[2];
+        8'b0011_1110: word <= line_d[1];
+        8'b0011_1111: word <= line_d[0];
+
+        8'b0100_0000: word <= line_e[15];
+        8'b0100_0001: word <= line_e[14];
+        8'b0100_0010: word <= line_e[13];
+        8'b0100_0011: word <= line_e[12];
+        8'b0100_0100: word <= line_e[11];
+        8'b0100_0101: word <= line_e[10];
+        8'b0100_0110: word <= line_e[9];
+        8'b0100_0111: word <= line_e[8];
+        8'b0100_1000: word <= line_e[7];
+        8'b0100_1001: word <= line_e[6];
+        8'b0100_1010: word <= line_e[5];
+        8'b0100_1011: word <= line_e[4];
+        8'b0100_1100: word <= line_e[3];
+        8'b0100_1101: word <= line_e[2];
+        8'b0100_1110: word <= line_e[1];
+        8'b0100_1111: word <= line_e[0];
+
+        8'b0101_0000: word <= line_f[15];
+        8'b0101_0001: word <= line_f[14];
+        8'b0101_0010: word <= line_f[13];
+        8'b0101_0011: word <= line_f[12];
+        8'b0101_0100: word <= line_f[11];
+        8'b0101_0101: word <= line_f[10];
+        8'b0101_0110: word <= line_f[9];
+        8'b0101_0111: word <= line_f[8];
+        8'b0101_1000: word <= line_f[7];
+        8'b0101_1001: word <= line_f[6];
+        8'b0101_1010: word <= line_f[5];
+        8'b0101_1011: word <= line_f[4];
+        8'b0101_1100: word <= line_f[3];
+        8'b0101_1101: word <= line_f[2];
+        8'b0101_1110: word <= line_f[1];
+        8'b0101_1111: word <= line_f[0];
+
+        8'b0110_0000: word <= line_g[15];
+        8'b0110_0001: word <= line_g[14];
+        8'b0110_0010: word <= line_g[13];
+        8'b0110_0011: word <= line_g[12];
+        8'b0110_0100: word <= line_g[11];
+        8'b0110_0101: word <= line_g[10];
+        8'b0110_0110: word <= line_g[9];
+        8'b0110_0111: word <= line_g[8];
+        8'b0110_1000: word <= line_g[7];
+        8'b0110_1001: word <= line_g[6];
+        8'b0110_1010: word <= line_g[5];
+        8'b0110_1011: word <= line_g[4];
+        8'b0110_1100: word <= line_g[3];
+        8'b0110_1101: word <= line_g[2];
+        8'b0110_1110: word <= line_g[1];
+        8'b0110_1111: word <= line_g[0];
+
+        8'b0111_0000: word <= line_h[15];
+        8'b0111_0001: word <= line_h[14];
+        8'b0111_0010: word <= line_h[13];
+        8'b0111_0011: word <= line_h[12];
+        8'b0111_0100: word <= line_h[11];
+        8'b0111_0101: word <= line_h[10];
+        8'b0111_0110: word <= line_h[9];
+        8'b0111_0111: word <= line_h[8];
+        8'b0111_1000: word <= line_h[7];
+        8'b0111_1001: word <= line_h[6];
+        8'b0111_1010: word <= line_h[5];
+        8'b0111_1011: word <= line_h[4];
+        8'b0111_1100: word <= line_h[3];
+        8'b0111_1101: word <= line_h[2];
+        8'b0111_1110: word <= line_h[1];
+        8'b0111_1111: word <= line_h[0];
+
+        8'b1000_0000: word <= line_i[15];
+        8'b1000_0001: word <= line_i[14];
+        8'b1000_0010: word <= line_i[13];
+        8'b1000_0011: word <= line_i[12];
+        8'b1000_0100: word <= line_i[11];
+        8'b1000_0101: word <= line_i[10];
+        8'b1000_0110: word <= line_i[9];
+        8'b1000_0111: word <= line_i[8];
+        8'b1000_1000: word <= line_i[7];
+        8'b1000_1001: word <= line_i[6];
+        8'b1000_1010: word <= line_i[5];
+        8'b1000_1011: word <= line_i[4];
+        8'b1000_1100: word <= line_i[3];
+        8'b1000_1101: word <= line_i[2];
+        8'b1000_1110: word <= line_i[1];
+        8'b1000_1111: word <= line_i[0];
+
+        8'b1001_0000: word <= line_j[15];
+        8'b1001_0001: word <= line_j[14];
+        8'b1001_0010: word <= line_j[13];
+        8'b1001_0011: word <= line_j[12];
+        8'b1001_0100: word <= line_j[11];
+        8'b1001_0101: word <= line_j[10];
+        8'b1001_0110: word <= line_j[9];
+        8'b1001_0111: word <= line_j[8];
+        8'b1001_1000: word <= line_j[7];
+        8'b1001_1001: word <= line_j[6];
+        8'b1001_1010: word <= line_j[5];
+        8'b1001_1011: word <= line_j[4];
+        8'b1001_1100: word <= line_j[3];
+        8'b1001_1101: word <= line_j[2];
+        8'b1001_1110: word <= line_j[1];
+        8'b1001_1111: word <= line_j[0];
+
+        8'b1010_0000: word <= line_k[15];
+        8'b1010_0001: word <= line_k[14];
+        8'b1010_0010: word <= line_k[13];
+        8'b1010_0011: word <= line_k[12];
+        8'b1010_0100: word <= line_k[11];
+        8'b1010_0101: word <= line_k[10];
+        8'b1010_0110: word <= line_k[9];
+        8'b1010_0111: word <= line_k[8];
+        8'b1010_1000: word <= line_k[7];
+        8'b1010_1001: word <= line_k[6];
+        8'b1010_1010: word <= line_k[5];
+        8'b1010_1011: word <= line_k[4];
+        8'b1010_1100: word <= line_k[3];
+        8'b1010_1101: word <= line_k[2];
+        8'b1010_1110: word <= line_k[1];
+        8'b1010_1111: word <= line_k[0];
+
+        8'b1011_0000: word <= line_l[15];
+        8'b1011_0001: word <= line_l[14];
+        8'b1011_0010: word <= line_l[13];
+        8'b1011_0011: word <= line_l[12];
+        8'b1011_0100: word <= line_l[11];
+        8'b1011_0101: word <= line_l[10];
+        8'b1011_0110: word <= line_l[9];
+        8'b1011_0111: word <= line_l[8];
+        8'b1011_1000: word <= line_l[7];
+        8'b1011_1001: word <= line_l[6];
+        8'b1011_1010: word <= line_l[5];
+        8'b1011_1011: word <= line_l[4];
+        8'b1011_1100: word <= line_l[3];
+        8'b1011_1101: word <= line_l[2];
+        8'b1011_1110: word <= line_l[1];
+        8'b1011_1111: word <= line_l[0];
+
+        8'b1100_0000: word <= line_m[15];
+        8'b1100_0001: word <= line_m[14];
+        8'b1100_0010: word <= line_m[13];
+        8'b1100_0011: word <= line_m[12];
+        8'b1100_0100: word <= line_m[11];
+        8'b1100_0101: word <= line_m[10];
+        8'b1100_0110: word <= line_m[9];
+        8'b1100_0111: word <= line_m[8];
+        8'b1100_1000: word <= line_m[7];
+        8'b1100_1001: word <= line_m[6];
+        8'b1100_1010: word <= line_m[5];
+        8'b1100_1011: word <= line_m[4];
+        8'b1100_1100: word <= line_m[3];
+        8'b1100_1101: word <= line_m[2];
+        8'b1100_1110: word <= line_m[1];
+        8'b1100_1111: word <= line_m[0];
+
+        8'b1101_0000: word <= line_n[15];
+        8'b1101_0001: word <= line_n[14];
+        8'b1101_0010: word <= line_n[13];
+        8'b1101_0011: word <= line_n[12];
+        8'b1101_0100: word <= line_n[11];
+        8'b1101_0101: word <= line_n[10];
+        8'b1101_0110: word <= line_n[9];
+        8'b1101_0111: word <= line_n[8];
+        8'b1101_1000: word <= line_n[7];
+        8'b1101_1001: word <= line_n[6];
+        8'b1101_1010: word <= line_n[5];
+        8'b1101_1011: word <= line_n[4];
+        8'b1101_1100: word <= line_n[3];
+        8'b1101_1101: word <= line_n[2];
+        8'b1101_1110: word <= line_n[1];
+        8'b1101_1111: word <= line_n[0];
+
+        8'b1110_0000: word <= line_o[15];
+        8'b1110_0001: word <= line_o[14];
+        8'b1110_0010: word <= line_o[13];
+        8'b1110_0011: word <= line_o[12];
+        8'b1110_0100: word <= line_o[11];
+        8'b1110_0101: word <= line_o[10];
+        8'b1110_0110: word <= line_o[9];
+        8'b1110_0111: word <= line_o[8];
+        8'b1110_1000: word <= line_o[7];
+        8'b1110_1001: word <= line_o[6];
+        8'b1110_1010: word <= line_o[5];
+        8'b1110_1011: word <= line_o[4];
+        8'b1110_1100: word <= line_o[3];
+        8'b1110_1101: word <= line_o[2];
+        8'b1110_1110: word <= line_o[1];
+        8'b1110_1111: word <= line_o[0];
+
+        8'b1111_0000: word <= line_p[15];
+        8'b1111_0001: word <= line_p[14];
+        8'b1111_0010: word <= line_p[13];
+        8'b1111_0011: word <= line_p[12];
+        8'b1111_0100: word <= line_p[11];
+        8'b1111_0101: word <= line_p[10];
+        8'b1111_0110: word <= line_p[9];
+        8'b1111_0111: word <= line_p[8];
+        8'b1111_1000: word <= line_p[7];
+        8'b1111_1001: word <= line_p[6];
+        8'b1111_1010: word <= line_p[5];
+        8'b1111_1011: word <= line_p[4];
+        8'b1111_1100: word <= line_p[3];
+        8'b1111_1101: word <= line_p[2];
+        8'b1111_1110: word <= line_p[1];
+        8'b1111_1111: word <= line_p[0];
+    endcase
+end
+endmodule
+

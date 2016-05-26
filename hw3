@@ -1,0 +1,186 @@
+module ELEVATOR(
+    FLOOR,    OPEN,
+    CLK,    RESET,    PEOPLE,    GOTO
+);
+input         CLK, RESET, PEOPLE;
+input   [2:0] GOTO;
+output        OPEN;
+output  [2:0] FLOOR;
+reg     [7:0] STATE;
+reg     [2:0] FLOOR,DIVINE_GO,CROSS_GO;
+reg           OPEN,GOGO;
+parameter ZERO_PEOPLE = 0;
+parameter ONE_PEOPLE  = 1;
+parameter TWO_PEOPLE  = 2;
+always@(posedge CLK)
+begin
+        if(RESET) begin
+                DIVINE_GO <= 1; CROSS_GO  <= 1;
+                FLOOR <= 1;     GOGO  <= 1;
+                OPEN  <= 0;     STATE <= ZERO_PEOPLE;
+        end
+        else begin
+                if(GOGO && PEOPLE) begin
+                        if(STATE == ZERO_PEOPLE) begin
+                                STATE     <= ONE_PEOPLE;
+                                DIVINE_GO <= GOTO;
+                                CROSS_GO  <= GOTO;
+                        end
+                        else if (STATE == ONE_PEOPLE) begin
+                                STATE <= TWO_PEOPLE;
+                                CROSS_GO  <= GOTO;
+                        end
+                end
+                if      ((PEOPLE==0 && DIVINE_GO == FLOOR+1) || (PEOPLE==0 &&
+DIVINE_GO == FLOOR-1)) begin
+                        OPEN <= 1;
+                        DIVINE_GO <= CROSS_GO;
+                end
+                else begin
+                        OPEN <= 0;
+                end
+                if      (PEOPLE==0 && DIVINE_GO < FLOOR) begin
+                        FLOOR <= FLOOR-1;
+                end
+                else if (PEOPLE==0 && DIVINE_GO > FLOOR) begin
+                        FLOOR <= FLOOR+1;
+                end
+                else if (PEOPLE==0 && (STATE !== ZERO_PEOPLE)) begin
+                        STATE <= STATE-1;
+                end
+        end
+end
+endmodule
+
+
+
+
+
+
+
+
+
+module ELEVATOR(
+    FLOOR,OPEN,
+    CLK,RESET,PEOPLE,GOTO
+);
+
+input        CLK, RESET, PEOPLE;
+input  [2:0] GOTO;
+output       OPEN;
+output [2:0] FLOOR;
+
+reg          OPEN,work;
+reg    [2:0] FLOOR,DEST1,DEST2,state,many;
+
+parameter STOP = 0;
+parameter DOWN = 1;
+parameter UP   = 2;
+
+// DEST  OK
+always@(posedge CLK)
+begin
+    if(RESET)
+    begin
+       many  <= 0;
+       DEST2 <= 0;
+       DEST1 <= 0;
+       OPEN  <= 0;
+       FLOOR <= 1;
+       state <= 0;
+    end
+    else if(work) begin
+        if(PEOPLE)
+        begin
+            many <= many+1;
+            if(many)
+                DEST2 <= GOTO;
+            else
+                DEST1 <= GOTO;
+        end
+    end
+end
+
+
+// state OPEN
+always@(posedge CLK)
+begin
+    if(RESET)
+    begin
+        work  <= 1;
+       state  <= STOP;
+    end
+    else if((work && DEST1 ) || (work && GOTO))
+    begin
+        if(GOTO && GOTO <FLOOR )
+        begin
+            if(many==0)
+            begin
+                state <= DOWN;
+                OPEN <= 0;
+            end
+            else
+            begin
+
+            end
+        end
+        else if(GOTO > FLOOR && many==0)
+        begin
+            state <= UP;
+            OPEN <= 0;
+        end
+        else if(((DEST1 == FLOOR-1 )&&(state==DOWN)&&(PEOPLE==0)) ||((DEST1
+== FLOOR+1 )&&(state==UP)&&(PEOPLE==0)))
+        begin
+            OPEN  <= 1;
+            DEST2 <= 0;
+            DEST1 <= DEST2;
+            if(many==2)
+            begin
+                if(DEST2 && DEST2>DEST1)
+                begin
+                    state <= UP;
+                end
+                else if(DEST2 && DEST2<DEST1)
+                    state <= DOWN;
+                many  <= 1;
+            end
+            else if(many==1)
+            begin
+                many  <= 0;
+                state <=STOP;
+            end
+        end
+    end
+end
+
+
+// FLOOR
+always@(posedge CLK)
+begin
+    if(RESET)
+    begin
+       many  <= 0;
+       DEST2 <= 0;
+       DEST1 <= 0;
+       OPEN  <= 0;
+       FLOOR <= 1;
+       state <= STOP;
+    end
+    else if(work && PEOPLE == 0) begin
+        case(state)
+            STOP : FLOOR <= FLOOR;
+            UP   : FLOOR <= FLOOR+1;
+            DOWN : FLOOR <= FLOOR-1;
+        endcase
+    end
+    if(OPEN)
+        if((many&&(DEST1==FLOOR+1)) || (DEST1==FLOOR-1))
+            OPEN  <= 1;
+        else
+            OPEN  <= 0;
+end
+endmodule
+
+
+

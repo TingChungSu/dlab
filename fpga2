@@ -1,0 +1,127 @@
+`timescale 1ns / 1ps
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+// Company:
+// Engineer:
+//
+// Create Date:    19:58:26 05/13/2013
+// Design Name:
+// Module Name:    top
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
+//
+// Dependencies:
+//
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+module top(
+    input CLK,
+    input RESET,
+    input [3:0] SWH,
+    output [7:0] LED,
+    output hsync,
+    output vsync,
+    output R,
+    output G,
+    output B
+  );
+wire visible;
+reg signed [23:0]pixel_col;
+reg signed [23:0]pixel_row;
+wire signed [23:0]tmpp_x;
+wire signed [23:0]tmp_x;
+wire signed [23:0]tmpp_y;
+wire signed [23:0]tmp_y;
+reg [1:0] mode;
+reg [2:0] RGB;
+reg row_inc;
+reg [23:0] size;
+reg [15:0] counter;
+
+assign tmpp_x = (pixel_col-400);
+assign tmpp_y = (pixel_row-300);
+
+assign tmp_x = (pixel_col-400);
+assign tmp_y = (pixel_row-300);
+
+assign hsync = ~( (pixel_col >= 919) & (pixel_col < 1039) );
+assign vsync = ~( (pixel_row >= 659) & (pixel_row < 665) ) ;
+assign visible = ( (pixel_col > 104) & (pixel_col < 904 ) & (pixel_row > 23)
+& (pixel_row < 623) );
+
+assign R = (visible)?(RGB[2]):0;
+assign G = (visible)?(RGB[1]):0;
+assign B = (visible)?(RGB[0]):0;
+assign LED = 8'b11000011;
+
+
+//counter
+always@(posedge CLK)begin
+    if(RESET) counter <=0;
+    else counter <= counter +1;
+end
+//mode
+always@(posedge CLK)begin
+    if(SWH[3]) mode <=1;
+    else if(SWH[2]) mode <=0;
+    else mode <=2;
+end
+//RGL
+always@(posedge CLK)begin
+    if(mode==0)begin//circle
+        if(((tmp_x*tmp_x)+(tmp_y*tmp_y)) < size) RGB <= 3'b100;
+        else RGB <= 3'b111;
+    end
+    else if(mode==1)begin//traiangle
+        if(((2*tmpp_x + tmpp_y)>120)&&((2*tmpp_x - tmpp_y)<120)&&(tmpp_y<100))\
+begin
+            if(SWH[0]) RGB[0]<=1;
+            else RGB[0]<=0;
+            if(SWH[1]) RGB[1]<=1;
+            else RGB[1]<=0;
+            if(SWH[2]) RGB[2]<=1;
+            else RGB[2]<=0;
+        end
+        else RGB <= 3'b111;
+    end
+    else RGB <= 3'b111;
+end
+
+always@(posedge CLK)begin
+    if(RESET) size <= 100;
+    else if(mode==0)begin
+        if(SWH[0] && counter==0 && size <50000) size <= size+1;
+        else if(SWH[1] && counter==0 && size >10) size <= size-1;
+        else size <= size;
+    end
+end
+
+always@(posedge CLK)begin
+    if(RESET) pixel_col <= 0;
+    else if(pixel_col == 1039) pixel_col <= 0;
+    else pixel_col <= pixel_col+1;
+end
+
+always@(posedge CLK)begin
+    if(RESET) row_inc <= 0;
+    else if(pixel_col == 1039) row_inc <= 1;
+    else row_inc <= 0;
+end
+
+always@(posedge CLK)begin
+    if(RESET) pixel_row <= 0;
+    else if(pixel_row == 665) pixel_row <= 0;
+    else if(row_inc) pixel_row <= pixel_row+1;
+    else pixel_row <= pixel_row;
+end
+
+endmodule
+

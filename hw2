@@ -1,0 +1,1077 @@
+module CTAH
+(
+    CLK,RESET,IN_VALID,MODE,IN1,IN2,
+    OUT_VALID,OUT
+);
+input CLK;
+input RESET;
+input IN_VALID;
+input MODE;
+input [7:0] IN1;
+input [7:0] IN2;
+
+output OUT_VALID;
+output [3:0] OUT;
+
+//Your declaration
+reg   temp_IN_VALID;
+wire  peak;
+
+reg MODEE,RESETT;
+reg OUT_VALID,FOROUT;
+reg [3:0] OUT;
+reg [4:0] counter;
+reg [4:0] counterr;
+reg [7:0] B11,B12,B13,B14,
+          B21,B22,B23,B24,
+          B31,B32,B33,B34,
+          B41,B42,B43,B44;
+
+reg [7:0] A11,A12,A13,A14,
+          A21,A22,A23,A24,
+          A31,A32,A33,A34,
+          A41,A42,A43,A44;
+
+reg [7:0] C11,C12,C13,C14,
+          C21,C22,C23,C24,
+          C31,C32,C33,C34,
+          C41,C42,C43,C44;
+
+
+//Your design
+assign peak = IN_VALID & ~ temp_IN_VALID;
+always@(posedge CLK)
+begin
+    temp_IN_VALID <= IN_VALID;
+    if(peak)
+    begin
+        MODEE <=MODE;
+    end
+    if (RESET || RESETT)
+    begin
+        counter <=0; OUT<=0;OUT_VALID <= 0;FOROUT <=0;counterr <=0;
+        A11 <=0;A12 <=0;A13 <=0;A14 <=0;
+        A21 <=0;A22 <=0;A23 <=0;A24 <=0;
+        A31 <=0;A32 <=0;A33 <=0;A34 <=0;
+        A41 <=0;A42 <=0;A43 <=0;A44 <=0;
+        B11 <=0;B12 <=0;B13 <=0;B14 <=0;
+        B21 <=0;B22 <=0;B23 <=0;B24 <=0;
+        B31 <=0;B32 <=0;B33 <=0;B34 <=0;
+        B41 <=0;B42 <=0;B43 <=0;B44 <=0;
+        C11 <=0;C12 <=0;C13 <=0;C14 <=0;
+        C21 <=0;C22 <=0;C23 <=0;C24 <=0;
+        C31 <=0;C32 <=0;C33 <=0;C34 <=0;
+        C41 <=0;C42 <=0;C43 <=0;C44 <=0;
+        RESETT<=0;
+    end
+
+    else if ((MODEE==0 && counter!==0) || (MODE==0 && counter==0 &&
+counterr==0))
+    begin
+
+        if(FOROUT)
+        begin
+            if(counterr==0)
+            begin
+                OUT_VALID <=1;
+                OUT <=
+B11[0]+B11[1]+B11[2]+B11[3]+B11[4]+B11[5]+B11[6]+B11[7];
+                counterr <= counterr+1;
+            end
+            else if(counterr==1)
+            begin
+                OUT <=
+B12[0]+B12[1]+B12[2]+B12[3]+B12[4]+B12[5]+B12[6]+B12[7];
+                counterr <= counterr+1;
+            end
+            else if(counterr==2)
+            begin
+                OUT <=
+B21[0]+B21[1]+B21[2]+B21[3]+B21[4]+B21[5]+B21[6]+B21[7];
+                counterr <= counterr+1;
+            end
+            else if(counterr==3)
+            begin
+                OUT <=
+B22[0]+B22[1]+B22[2]+B22[3]+B22[4]+B22[5]+B22[6]+B22[7];
+                RESETT <=1;
+            end
+        end
+
+        else
+        begin
+            if(counter==0 && IN_VALID)
+            begin
+               A11<=IN1;    B11<=IN2;
+               counter <= counter+1;
+            end
+            else if(counter==1)
+            begin
+               A12<=IN1;    B12<=IN2;
+               counter <= counter+1;
+            end
+            else if(counter==2)
+            begin
+               A21<=IN1;    B21<=IN2;
+               counter <= counter+1;
+            end
+            else if(counter==3)
+            begin
+               A22<=IN1;    B22<=IN2;
+               counter <= counter+1;
+            end
+            else if(counter==4)
+            begin
+                if(A11>A12)
+                begin
+                   C11[4]<=1;
+                end
+                else if(A11<A12)
+                begin
+                   C12[3]<=1;
+                end
+
+                if(A11>A21)
+                begin
+                   C11[6]<=1;
+                end
+                else if(A11<A21)
+                begin
+                   C21[1]<=1;
+                end
+
+                if(A11>A22)
+                begin
+                   C11[7]<=1;
+                end
+                else if(A11<A22)
+                begin
+                   C22[0]<=1;
+                end
+
+                if(A12>A21)
+                begin
+                   C12[5]<=1;
+                end
+                else if(A12<A21)
+                begin
+                   C21[2]<=1;
+                end
+
+                if(A12>A22)
+                begin
+                   C12[6]<=1;
+                end
+                else if(A12<A22)
+                begin
+                   C22[1]<=1;
+                end
+
+                if(A21>A22)
+                begin
+                   C21[4]<=1;
+                end
+                else if(A21<A22)
+                begin
+                   C22[3]<=1;
+                end
+                counter <= counter+1;
+            end
+            else if(counter==5)
+            begin
+                A11 <= C11;
+                A12 <= C12;
+                A21 <= C21;
+                A22 <= C22;
+                C11 <= 0;
+                C12 <= 0;
+                C21 <= 0;
+                C22 <= 0;
+                counter <= counter+1;
+            end
+            else if(counter==6)
+            begin
+                if(B11>B12)
+                begin
+                   C11[4]<=1;
+                end
+                else if(B11<B12)
+                begin
+                   C12[3]<=1;
+                end
+
+                if(B11>B21)
+                begin
+                   C11[6]<=1;
+                end
+                else if(B11<B21)
+                begin
+                   C21[1]<=1;
+                end
+
+                if(B11>B22)
+                begin
+                   C11[7]<=1;
+                end
+                else if(B11<B22)
+                begin
+                   C22[0]<=1;
+                end
+
+                if(B12>B21)
+                begin
+                   C12[5]<=1;
+                end
+                else if(B12<B21)
+                begin
+                   C21[2]<=1;
+                end
+
+                if(B12>B22)
+                begin
+                   C12[6]<=1;
+                end
+                else if(B12<B22)
+                begin
+                   C22[1]<=1;
+                end
+
+                if(B21>B22)
+                begin
+                   C21[4]<=1;
+                end
+                else if(B21<B22)
+                begin
+                   C22[3]<=1;
+                end
+                counter <= counter+1;
+            end
+            else if (counter ==7)
+            begin
+                B11 <= A11^C11;
+                B12 <= A12^C12;
+                B21 <= A21^C21;
+                B22 <= A22^C22;
+                FOROUT <= 1;
+            end
+        end
+    end
+    else if ((MODEE==1 && counterr !==0) || (MODE==1 && counter==0  &&
+counterr==0))
+    begin
+        if(FOROUT)
+        begin
+            if(counter==0)
+            begin
+                OUT_VALID <=1;
+                OUT <=
+B11[0]+B11[1]+B11[2]+B11[3]+B11[4]+B11[5]+B11[6]+B11[7];
+                counter <= counter+1;
+            end
+            else if(counter==1)
+            begin
+                OUT <=
+B12[0]+B12[1]+B12[2]+B12[3]+B12[4]+B12[5]+B12[6]+B12[7];
+                counter <= counter+1;
+            end
+            else if(counter==2)
+            begin
+                OUT <=
+B13[0]+B13[1]+B13[2]+B13[3]+B13[4]+B13[5]+B13[6]+B13[7];
+                counter <= counter+1;
+            end
+            else if(counter==3)
+            begin
+                OUT <=
+B14[0]+B14[1]+B14[2]+B14[3]+B14[4]+B14[5]+B14[6]+B14[7];
+                counter <= counter+1;
+            end
+            else if(counter==4)
+            begin
+                OUT <=
+B21[0]+B21[1]+B21[2]+B21[3]+B21[4]+B21[5]+B21[6]+B21[7];
+                counter <= counter+1;
+            end
+            else if(counter==5)
+            begin
+                OUT <=
+B22[0]+B22[1]+B22[2]+B22[3]+B22[4]+B22[5]+B22[6]+B22[7];
+                counter <= counter+1;
+            end
+            else if(counter==6)
+            begin
+                OUT <=
+B23[0]+B23[1]+B23[2]+B23[3]+B23[4]+B23[5]+B23[6]+B23[7];
+                counter <= counter+1;
+            end
+            else if(counter==7)
+            begin
+                OUT <=
+B24[0]+B24[1]+B24[2]+B24[3]+B24[4]+B24[5]+B24[6]+B24[7];
+                counter <= counter+1;
+            end
+            else if(counter==8)
+            begin
+                OUT <=
+B31[0]+B31[1]+B31[2]+B31[3]+B31[4]+B31[5]+B31[6]+B31[7];
+                counter <= counter+1;
+            end
+            else if(counter==9)
+            begin
+                OUT <=
+B32[0]+B32[1]+B32[2]+B32[3]+B32[4]+B32[5]+B32[6]+B32[7];
+                counter <= counter+1;
+            end
+            else if(counter==10)
+            begin
+                OUT <=
+B33[0]+B33[1]+B33[2]+B33[3]+B33[4]+B33[5]+B33[6]+B33[7];
+                counter <= counter+1;
+            end
+            else if(counter==11)
+            begin
+                OUT <=
+B34[0]+B34[1]+B34[2]+B34[3]+B34[4]+B34[5]+B34[6]+B34[7];
+                counter <= counter+1;
+            end
+            else if(counter==12)
+            begin
+                OUT <=
+B41[0]+B41[1]+B41[2]+B41[3]+B41[4]+B41[5]+B41[6]+B41[7];
+                counter <= counter+1;
+            end
+            else if(counter==13)
+            begin
+                OUT <=
+B42[0]+B42[1]+B42[2]+B42[3]+B42[4]+B42[5]+B42[6]+B42[7];
+                counter <= counter+1;
+            end
+            else if(counter==14)
+            begin
+                OUT <=
+B43[0]+B43[1]+B43[2]+B43[3]+B43[4]+B43[5]+B43[6]+B43[7];
+                counter <= counter+1;
+            end
+            else if(counter==15)
+            begin
+                OUT <=
+B44[0]+B44[1]+B44[2]+B44[3]+B44[4]+B44[5]+B44[6]+B44[7];
+                RESETT <=1;
+            end
+        end
+
+        else
+        begin
+        if(IN_VALID)
+        begin
+            if(counterr==0)
+            begin
+                A11<=IN1;    B11<=IN2;
+                counterr <= counterr+1;
+            end
+            if(counterr==1)
+            begin
+               A12<=IN1;    B12<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==2)
+            begin
+               A13<=IN1;    B13<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==3)
+            begin
+               A14<=IN1;    B14<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==4)
+            begin
+               A21<=IN1;    B21<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==5)
+            begin
+               A22<=IN1;    B22<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==6)
+            begin
+               A23<=IN1;    B23<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==7)
+            begin
+               A24<=IN1;    B24<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==8)
+            begin
+               A31<=IN1;    B31<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==9)
+            begin
+               A32<=IN1;    B32<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==10)
+            begin
+               A33<=IN1;    B33<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==11)
+            begin
+               A34<=IN1;    B34<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==12)
+            begin
+               A41<=IN1;    B41<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==13)
+            begin
+               A42<=IN1;    B42<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==14)
+            begin
+               A43<=IN1;    B43<=IN2;
+               counterr <= counterr+1;
+            end
+            else if(counterr==15)
+            begin
+               A44<=IN1;    B44<=IN2;
+               counterr <= counterr+1;
+            end
+        end
+            else if(counterr==16)
+            begin
+
+                if(A11>A12) begin
+                   C11[4]<=1;
+                end
+                else if(A11<A12) begin
+                   C12[3]<=1;
+                end
+
+                if(A12>A13) begin
+                   C12[4]<=1;
+                end
+                else if(A12<A13) begin
+                   C13[3]<=1;
+                end
+
+                if(A13>A14) begin
+                   C13[4]<=1;
+                end
+                else if(A13<A14) begin
+                   C14[3]<=1;
+                end
+
+
+                if(A21>A22) begin
+                   C21[4]<=1;
+                end
+                else if(A21<A22) begin
+                   C22[3]<=1;
+                end
+
+                if(A22>A23) begin
+                   C22[4]<=1;
+                end
+                else if(A22<A23) begin
+                   C23[3]<=1;
+                end
+
+                if(A23>A24) begin
+                   C23[4]<=1;
+                end
+                else if(A23<A24) begin
+                   C24[3]<=1;
+                end
+
+
+                if(A31>A32) begin
+                   C31[4]<=1;
+                end
+                else if(A31<A32) begin
+                   C32[3]<=1;
+                end
+
+                if(A32>A33) begin
+                   C32[4]<=1;
+                end
+                else if(A32<A33) begin
+                   C33[3]<=1;
+                end
+
+                if(A33>A34) begin
+                   C33[4]<=1;
+                end
+                else if(A33<A34) begin
+                   C34[3]<=1;
+                end
+
+
+                if(A41>A42) begin
+                   C41[4]<=1;
+                end
+                else if(A41<A42) begin
+                   C42[3]<=1;
+                end
+
+                if(A42>A43) begin
+                   C42[4]<=1;
+                end
+                else if(A42<A43) begin
+                   C43[3]<=1;
+                end
+
+                if(A43>A44) begin
+                   C43[4]<=1;
+                end
+                else if(A43<A44) begin
+                   C44[3]<=1;
+                end
+
+
+
+                if(A11>A21)  begin
+                   C11[6]<=1;
+                end
+                else if(A11<A21) begin
+                   C21[1]<=1;
+                end
+
+                if(A21>A31)  begin
+                   C21[6]<=1;
+                end
+                else if(A21<A31) begin
+                   C31[1]<=1;
+                end
+
+                if(A31>A41)  begin
+                   C31[6]<=1;
+                end
+                else if(A31<A41) begin
+                   C41[1]<=1;
+                end
+
+
+                if(A12>A22)  begin
+                   C12[6]<=1;
+                end
+                else if(A12<A22) begin
+                   C22[1]<=1;
+                end
+
+                if(A22>A32)  begin
+                   C22[6]<=1;
+                end
+                else if(A22<A32) begin
+                   C32[1]<=1;
+                end
+
+                if(A32>A42)  begin
+                   C32[6]<=1;
+                end
+                else if(A32<A42) begin
+                   C42[1]<=1;
+                end
+
+
+                if(A13>A23)  begin
+                   C13[6]<=1;
+                end
+                else if(A13<A23) begin
+                   C23[1]<=1;
+                end
+
+                if(A23>A33)  begin
+                   C23[6]<=1;
+                end
+                else if(A23<A33) begin
+                   C33[1]<=1;
+                end
+
+                if(A33>A43)  begin
+                   C33[6]<=1;
+                end
+                else if(A33<A43) begin
+                   C43[1]<=1;
+                end
+
+
+                if(A14>A24)  begin
+                   C14[6]<=1;
+                end
+                else if(A14<A24) begin
+                   C24[1]<=1;
+                end
+
+                if(A24>A34)  begin
+                   C24[6]<=1;
+                end
+                else if(A24<A34) begin
+                   C34[1]<=1;
+                end
+
+                if(A34>A44)  begin
+                   C34[6]<=1;
+                end
+                else if(A34<A44) begin
+                   C44[1]<=1;
+                end
+
+
+
+                if(A12>A21) begin
+                   C12[5]<=1;
+                end
+                else if(A12<A21) begin
+                   C21[2]<=1;
+                end
+                if(A13>A22) begin
+                   C13[5]<=1;
+                end
+                else if(A13<A22) begin
+                   C22[2]<=1;
+                end
+                if(A14>A23) begin
+                   C14[5]<=1;
+                end
+                else if(A14<A23) begin
+                   C23[2]<=1;
+                end
+
+
+                if(A22>A31) begin
+                   C22[5]<=1;
+                end
+                else if(A22<A31) begin
+                   C31[2]<=1;
+                end
+                if(A23>A32) begin
+                   C23[5]<=1;
+                end
+                else if(A23<A32) begin
+                   C32[2]<=1;
+                end
+                if(A24>A33) begin
+                   C24[5]<=1;
+                end
+                else if(A24<A33) begin
+                   C33[2]<=1;
+                end
+
+
+                if(A32>A41) begin
+                   C32[5]<=1;
+                end
+                else if(A32<A41) begin
+                   C41[2]<=1;
+                end
+                if(A33>A42) begin
+                   C33[5]<=1;
+                end
+                else if(A33<A42) begin
+                   C42[2]<=1;
+                end
+                if(A34>A43) begin
+                   C34[5]<=1;
+                end
+                else if(A34<A43) begin
+                   C43[2]<=1;
+                end
+
+
+                if(A11>A22) begin
+                   C11[7]<=1;
+                end
+                else if(A11<A22) begin
+                   C22[0]<=1;
+                end
+                if(A12>A23) begin
+                   C12[7]<=1;
+                end
+                else if(A12<A23) begin
+                   C23[0]<=1;
+                end
+                if(A13>A24) begin
+                   C13[7]<=1;
+                end
+                else if(A13<A24) begin
+                   C24[0]<=1;
+                end
+
+                if(A21>A32) begin
+                   C21[7]<=1;
+                end
+                else if(A21<A32) begin
+                   C32[0]<=1;
+                end
+                if(A22>A33) begin
+                   C22[7]<=1;
+                end
+                else if(A22<A33) begin
+                   C33[0]<=1;
+                end
+                if(A23>A34) begin
+                   C23[7]<=1;
+                end
+                else if(A23<A34) begin
+                   C34[0]<=1;
+                end
+
+                if(A31>A42) begin
+                   C31[7]<=1;
+                end
+                else if(A31<A42) begin
+                   C42[0]<=1;
+                end
+                if(A32>A43) begin
+                   C32[7]<=1;
+                end
+                else if(A32<A43) begin
+                   C43[0]<=1;
+                end
+                if(A33>A44) begin
+                   C33[7]<=1;
+                end
+                else if(A33<A44) begin
+                   C44[0]<=1;
+                end
+
+                counterr <= counterr+1;
+            end
+            else if(counterr==17)
+            begin
+                A11 <= C11; A12 <= C12; A13 <= C13; A14 <= C14;
+                A21 <= C21; A22 <= C22; A23 <= C23; A24 <= C24;
+                A31 <= C31; A32 <= C32; A33 <= C33; A34 <= C34;
+                A41 <= C41; A42 <= C42; A43 <= C43; A44 <= C44;
+                C11 <= 0; C12 <= 0; C13 <= 0; C14 <= 0;
+                C21 <= 0; C22 <= 0; C23 <= 0; C24 <= 0;
+                C31 <= 0; C32 <= 0; C33 <= 0; C34 <= 0;
+                C41 <= 0; C42 <= 0; C43 <= 0; C44 <= 0;
+                counterr <= counterr+1;
+            end
+            else if(counterr==18)
+            begin
+                            if(B11>B12) begin
+                   C11[4]<=1;
+                end
+                else if(B11<B12) begin
+                   C12[3]<=1;
+                end
+
+                if(B12>B13) begin
+                   C12[4]<=1;
+                end
+                else if(B12<B13) begin
+                   C13[3]<=1;
+                end
+
+                if(B13>B14) begin
+                   C13[4]<=1;
+                end
+                else if(B13<B14) begin
+                   C14[3]<=1;
+                end
+
+
+                if(B21>B22) begin
+                   C21[4]<=1;
+                end
+                else if(B21<B22) begin
+                   C22[3]<=1;
+                end
+
+                if(B22>B23) begin
+                   C22[4]<=1;
+                end
+                else if(B22<B23) begin
+                   C23[3]<=1;
+                end
+
+                if(B23>B24) begin
+                   C23[4]<=1;
+                end
+                else if(B23<B24) begin
+                   C24[3]<=1;
+                end
+
+
+                if(B31>B32) begin
+                   C31[4]<=1;
+                end
+                else if(B31<B32) begin
+                   C32[3]<=1;
+                end
+
+                if(B32>B33) begin
+                   C32[4]<=1;
+                end
+                else if(B32<B33) begin
+                   C33[3]<=1;
+                end
+
+                if(B33>B34) begin
+                   C33[4]<=1;
+                end
+                else if(B33<B34) begin
+                   C34[3]<=1;
+                end
+
+
+                if(B41>B42) begin
+                   C41[4]<=1;
+                end
+                else if(B41<B42) begin
+                   C42[3]<=1;
+                end
+
+                if(B42>B43) begin
+                   C42[4]<=1;
+                end
+                else if(B42<B43) begin
+                   C43[3]<=1;
+                end
+
+                if(B43>B44) begin
+                   C43[4]<=1;
+                end
+                else if(B43<B44) begin
+                   C44[3]<=1;
+                end
+
+
+
+                if(B11>B21)  begin
+                   C11[6]<=1;
+                end
+                else if(B11<B21) begin
+                   C21[1]<=1;
+                end
+
+                if(B21>B31)  begin
+                   C21[6]<=1;
+                end
+                else if(B21<B31) begin
+                   C31[1]<=1;
+                end
+
+                if(B31>B41)  begin
+                   C31[6]<=1;
+                end
+                else if(B31<B41) begin
+                   C41[1]<=1;
+                end
+
+
+                if(B12>B22)  begin
+                   C12[6]<=1;
+                end
+                else if(B12<B22) begin
+                   C22[1]<=1;
+                end
+
+                if(B22>B32)  begin
+                   C22[6]<=1;
+                end
+                else if(B22<B32) begin
+                   C32[1]<=1;
+                end
+
+                if(B32>B42)  begin
+                   C32[6]<=1;
+                end
+                else if(B32<B42) begin
+                   C42[1]<=1;
+                end
+
+
+                if(B13>B23)  begin
+                   C13[6]<=1;
+                end
+                else if(B13<B23) begin
+                   C23[1]<=1;
+                end
+
+                if(B23>B33)  begin
+                   C23[6]<=1;
+                end
+                else if(B23<B33) begin
+                   C33[1]<=1;
+                end
+
+                if(B33>B43)  begin
+                   C33[6]<=1;
+                end
+                else if(B33<B43) begin
+                   C43[1]<=1;
+                end
+
+
+                if(B14>B24)  begin
+                   C14[6]<=1;
+                end
+                else if(B14<B24) begin
+                   C24[1]<=1;
+                end
+
+                if(B24>B34)  begin
+                   C24[6]<=1;
+                end
+                else if(B24<B34) begin
+                   C34[1]<=1;
+                end
+
+                if(B34>B44)  begin
+                   C34[6]<=1;
+                end
+                else if(B34<B44) begin
+                   C44[1]<=1;
+                end
+
+
+
+                if(B12>B21) begin
+                   C12[5]<=1;
+                end
+                else if(B12<B21) begin
+                   C21[2]<=1;
+                end
+                if(B13>B22) begin
+                   C13[5]<=1;
+                end
+                else if(B13<B22) begin
+                   C22[2]<=1;
+                end
+                if(B14>B23) begin
+                   C14[5]<=1;
+                end
+                else if(B14<B23) begin
+                   C23[2]<=1;
+                end
+
+
+                if(B22>B31) begin
+                   C22[5]<=1;
+                end
+                else if(B22<B31) begin
+                   C31[2]<=1;
+                end
+                if(B23>B32) begin
+                   C23[5]<=1;
+                end
+                else if(B23<B32) begin
+                   C32[2]<=1;
+                end
+                if(B24>B33) begin
+                   C24[5]<=1;
+                end
+                else if(B24<B33) begin
+                   C33[2]<=1;
+                end
+
+
+                if(B32>B41) begin
+                   C32[5]<=1;
+                end
+                else if(B32<B41) begin
+                   C41[2]<=1;
+                end
+                if(B33>B42) begin
+                   C33[5]<=1;
+                end
+                else if(B33<B42) begin
+                   C42[2]<=1;
+                end
+                if(B34>B43) begin
+                   C34[5]<=1;
+                end
+                else if(B34<B43) begin
+                   C43[2]<=1;
+                end
+
+
+                if(B11>B22) begin
+                   C11[7]<=1;
+                end
+                else if(B11<B22) begin
+                   C22[0]<=1;
+                end
+                if(B12>B23) begin
+                   C12[7]<=1;
+                end
+                else if(B12<B23) begin
+                   C23[0]<=1;
+                end
+                if(B13>B24) begin
+                   C13[7]<=1;
+                end
+                else if(B13<B24) begin
+                   C24[0]<=1;
+                end
+
+                if(B21>B32) begin
+                   C21[7]<=1;
+                end
+                else if(B21<B32) begin
+                   C32[0]<=1;
+                end
+                if(B22>B33) begin
+                   C22[7]<=1;
+                end
+                else if(B22<B33) begin
+                   C33[0]<=1;
+                end
+                if(B23>B34) begin
+                   C23[7]<=1;
+                end
+                else if(B23<B34) begin
+                   C34[0]<=1;
+                end
+
+                if(B31>B42) begin
+                   C31[7]<=1;
+                end
+                else if(B31<B42) begin
+                   C42[0]<=1;
+                end
+                if(B32>B43) begin
+                   C32[7]<=1;
+                end
+                else if(B32<B43) begin
+                   C43[0]<=1;
+                end
+                if(B33>B44) begin
+                   C33[7]<=1;
+                end
+                else if(B33<B44) begin
+                   C44[0]<=1;
+                end
+                counterr <= counterr+1;
+            end
+            else if (counterr == 19)
+            begin
+                B11 <= A11^C11; B12 <= A12^C12; B13 <= A13^C13; B14 <=
+A14^C14;
+                B21 <= A21^C21; B22 <= A22^C22; B23 <= A23^C23; B24 <=
+A24^C24;
+                B31 <= A31^C31; B32 <= A32^C32; B33 <= A33^C33; B34 <=
+A34^C34;
+                B41 <= A41^C41; B42 <= A42^C42; B43 <= A43^C43; B44 <=
+A44^C44;
+                FOROUT <= 1;
+            end
+        end
+    end
+end
+endmodule
+
+
+
+

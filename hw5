@@ -1,0 +1,380 @@
+module MATRIXMUL
+(
+    input wire          CLK,
+    input wire          RESET,
+    input wire          IN_VALID,
+    input wire [3:0]    IN,
+    output reg          OUT_VALID,
+    output reg [7:0]    OUT
+);
+reg     [6:0]   counter;
+reg     [3:0]   a1,a2,a3,a4,a5,a6,a7,a8,a9;
+reg     [3:0]   b1,b2,b3,b4,b5,b6,b7,b8,b9;
+reg     [3:0]   mul1,mul2;
+reg     [7:0]   add1,add2,t1,t2,t3;
+wire    [7:0]   product;
+wire    [7:0]   sum;
+reg     [7:0]   o1,o2,o3,o4,o5,o6,o7,o8;
+reg     done,go;
+assign  sum     = add1 + add2;
+assign  product = mul1 * mul2;
+always@(posedge CLK) begin
+    if(RESET || done)   begin
+        OUT_VALID   <= 0;
+        done        <= 0;
+        go          <= 0;
+        counter     <= 0;
+    end
+    else begin
+        if(IN_VALID || go)  begin
+            if(counter == 0) begin
+                a1      <=IN;
+                counter <=1;
+                go      <=1;
+            end
+            else if(counter == 1)   begin
+                a2      <=IN;
+                counter <=2;
+            end
+            else if(counter == 2)   begin
+                a3      <=IN;
+                counter <=3;
+            end
+            else if(counter == 3)   begin
+                a4      <=IN;
+                counter <=4;
+            end
+            else if(counter == 4)   begin
+                a5      <=IN;
+                counter <=5;
+            end
+            else if(counter == 5)   begin
+                a6      <=IN;
+                counter <=6;
+            end
+            else if(counter == 6)   begin
+                a7      <=IN;
+                counter <=7;
+            end
+            else if(counter == 7)   begin
+                a8      <=IN;
+                counter <=8;
+            end
+            else if(counter == 8)   begin
+                a9      <=IN;
+                counter <=9;
+            end
+            else if(counter == 9)   begin
+                b1      <=IN;
+                counter <=10;
+            end
+            else if(counter == 10)  begin
+                b2      <=IN;
+                counter <=11;
+            end
+            else if(counter == 11)  begin
+                b3      <=IN;
+                counter <=12;
+            end
+            else if(counter == 12)  begin
+                b4      <=IN;
+                counter <=13;
+            end
+            else if(counter == 13)  begin
+                b5      <=IN;
+                counter <=14;
+            end
+            else if(counter == 14)  begin
+                b6      <=IN;
+                counter <=15;
+            end
+            else if(counter == 15)  begin
+                b7      <=IN;
+                counter <=16;
+            end
+            else if(counter == 16)  begin
+                b8      <=IN;
+                counter <=17;
+            end
+            else if(counter == 17)  begin
+                b9      <=IN;
+                counter <=18;
+            end
+            else if(counter == 18)  begin
+                mul1    <=a1;
+                mul2    <=b1;
+                counter <=19;
+            end
+            else if(counter == 19)  begin
+                mul1    <=a2;
+                mul2    <=b4;
+                t1      <=product;
+                counter <=20;
+            end
+            else if(counter == 20)  begin
+                mul1    <=a3;
+                mul2    <=b7;
+                t2      <=product;
+                counter <=21;
+            end
+            else if(counter == 21)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=22;
+            end
+            else if(counter == 22)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=23;
+            end
+            else if(counter == 23)  begin   //o1
+                o1      <=sum;
+                mul1    <=a1;
+                mul2    <=b2;
+                counter <=24;
+            end
+            else if(counter == 24)  begin
+                mul1    <=a2;
+                mul2    <=b5;
+                t1      <=product;
+                counter <=25;
+            end
+            else if(counter == 25)  begin
+                mul1    <=a3;
+                mul2    <=b8;
+                t2      <=product;
+                counter <=26;
+            end
+            else if(counter == 26)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=27;
+            end
+            else if(counter == 27)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=28;
+            end
+            else if(counter == 28)  begin   //o2
+                o2      <=sum;
+                mul1    <=a1;
+                mul2    <=b3;
+                counter <=29;
+            end
+            else if(counter == 29)  begin
+                mul1    <=a2;
+                mul2    <=b6;
+                t1      <=product;
+                counter <=30;
+            end
+            else if(counter == 30)  begin
+                mul1    <=a3;
+                mul2    <=b9;
+                t2      <=product;
+                counter <=31;
+            end
+            else if(counter == 31)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=32;
+            end
+            else if(counter == 32)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=33;
+            end
+            else if(counter == 33)  begin   //o3
+                o3      <=sum;
+                mul1    <=a4;
+                mul2    <=b1;
+                counter <=34;
+            end
+            else if(counter == 34)  begin
+                mul1    <=a5;
+                mul2    <=b4;
+                t1      <=product;
+                counter <=35;
+            end
+            else if(counter == 35)  begin
+                mul1    <=a6;
+                mul2    <=b7;
+                t2      <=product;
+                counter <=36;
+            end
+            else if(counter == 36)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=37;
+            end
+            else if(counter == 37)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=38;
+            end
+            else if(counter == 38)  begin   //o4
+                o4      <=sum;
+                mul1    <=a4;
+                mul2    <=b2;
+                counter <=39;
+            end
+            else if(counter == 39)  begin
+                mul1    <=a5;
+                mul2    <=b5;
+                t1      <=product;
+                counter <=40;
+            end
+            else if(counter == 40)  begin
+                mul1    <=a6;
+                mul2    <=b8;
+                t2      <=product;
+                counter <=41;
+            end
+            else if(counter == 41)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=42;
+            end
+            else if(counter == 42)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=43;
+            end
+            else if(counter == 43)  begin   //o5
+                o5      <=sum;
+                mul1    <=a4;
+                mul2    <=b3;
+                counter <=44;
+            end
+            else if(counter == 44)  begin
+                mul1    <=a5;
+                mul2    <=b6;
+                t1      <=product;
+                counter <=45;
+            end
+            else if(counter == 45)  begin
+                mul1    <=a6;
+                mul2    <=b9;
+                t2      <=product;
+                counter <=46;
+            end
+            else if(counter == 46)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=47;
+            end
+            else if(counter == 47)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=48;
+            end
+            else if(counter == 48)  begin   //o6
+                o6      <=sum;
+                mul1    <=a7;
+                mul2    <=b1;
+                counter <=49;
+            end
+            else if(counter == 49)  begin
+                mul1    <=a8;
+                mul2    <=b4;
+                t1      <=product;
+                counter <=50;
+            end
+            else if(counter == 50)  begin
+                mul1    <=a9;
+                mul2    <=b7;
+                t2      <=product;
+                counter <=51;
+            end
+            else if(counter == 51)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=52;
+            end
+            else if(counter == 52)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=53;
+            end
+            else if(counter == 53)  begin   //o7
+                o7      <=sum;
+                mul1    <=a7;
+                mul2    <=b2;
+                counter <=54;
+            end
+            else if(counter == 54)  begin
+                mul1    <=a8;
+                mul2    <=b5;
+                t1      <=product;
+                counter <=55;
+            end
+            else if(counter == 55)  begin
+                mul1    <=a9;
+                mul2    <=b8;
+                t2      <=product;
+                counter <=56;
+                OUT     <=o1;
+                OUT_VALID<=1;
+            end
+            else if(counter == 56)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=57;
+                OUT     <=o2;
+            end
+            else if(counter == 57)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=58;
+                OUT     <=o3;
+            end
+            else if(counter == 58)  begin   //o8
+                o8      <=sum;
+                mul1    <=a7;
+                mul2    <=b3;
+                counter <=59;
+                OUT     <=o4;
+            end
+            else if(counter == 59)  begin
+                mul1    <=a8;
+                mul2    <=b6;
+                t1      <=product;
+                counter <=60;
+                OUT     <=o5;
+            end
+            else if(counter == 60)  begin
+                mul1    <=a9;
+                mul2    <=b9;
+                t2      <=product;
+                counter <=61;
+                OUT     <=o6;
+            end
+            else if(counter == 61)  begin
+                add1    <=t1;
+                add2    <=t2;
+                t3      <=product;
+                counter <=62;
+                OUT     <=o7;
+            end
+            else if(counter == 62)  begin
+                add1    <=sum;
+                add2    <=t3;
+                counter <=63;
+                OUT     <=o8;
+            end
+            else    begin
+                OUT         <=sum;
+                done        <=1;
+            end
+        end
+    end
+end
+endmodule
+

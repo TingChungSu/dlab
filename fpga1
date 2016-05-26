@@ -1,0 +1,237 @@
+//top.v
+
+`timescale 1ns / 1ps
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+// Company:
+// Engineer:
+//
+// Create Date:    18:52:34 05/15/2013
+// Design Name:
+// Module Name:    top
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
+//
+// Dependencies:
+//
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+//
+
+//////////////////////////////////////////////////////////////////////////////\
+////
+module top(
+    //input
+    CLK,RESET,KDAT,KCLK,SW,BTN_1,BTN_2,BTN_3,ROT_A,ROT_B,ROT_CENTER,
+    //output
+    LED
+    );
+input CLK, RESET, KDAT, KCLK, BTN_1, BTN_2, BTN_3, ROT_A, ROT_B, ROT_CENTER;
+input [3:0] SW;
+output [7:0] LED;
+
+wire [7:0] DATA;
+reg [7:0] LED;
+reg [23:0] counter;
+reg [1:0] modeB,modeK,dir,dirr;
+reg rotary_a_in,rotary_b_in,ra,rb;
+
+wire [1:0] rotary_in;
+assign rotary_in={ROT_B,ROT_A};
+//Rotary Push_Button Switch
+always@(posedge CLK)begin
+        ra <= rotary_a_in;
+        rb <= rotary_b_in;
+end
+
+always@(posedge CLK)begin
+    if(RESET || ROT_CENTER)begin
+        rotary_a_in <= 0;
+        rotary_b_in <= 0;
+    end
+    else begin
+        case(rotary_in)
+            2'b00:begin
+                rotary_a_in <= 0;
+                rotary_b_in <= rotary_b_in;
+            end
+            2'b01:begin //right
+                rotary_a_in <= rotary_a_in;
+                rotary_b_in <= 0;
+            end
+            2'b10:begin //left
+                rotary_a_in <= rotary_a_in;
+                rotary_b_in <= 1;
+            end
+            2'b11:begin
+                rotary_a_in <= 1;
+                rotary_b_in <= rotary_b_in;
+            end
+            default:begin
+                rotary_a_in <= rotary_a_in;
+                rotary_b_in <= rotary_b_in;
+            end
+        endcase
+
+    end
+end
+
+always@(posedge CLK)begin
+    if(rotary_a_in && rotary_b_in)begin
+        if(ra && !rb) dir <= 1;
+        else if(!ra && rb) dir <=2;
+        else dir <= 0;
+    end
+end
+
+
+//modeB
+always@(posedge CLK)begin
+    if(RESET || ROT_CENTER)modeB<=0;
+    else if(BTN_1 && !BTN_2 && !BTN_3)modeB<=1;
+    else if(!BTN_1 && BTN_2 && !BTN_3)modeB<=2;
+    else if(!BTN_1 && !BTN_2 && BTN_3)modeB<=3;
+    else modeB<=modeB;
+end
+//modeK
+always@(posedge CLK)begin
+    if(RESET)modeK<=0;
+    else if(dir==1)modeK<=1;
+    else if(dir==2)modeK<=2;
+    else if(ROT_CENTER)modeK<=3;
+    else modeK<=0;
+end
+//counter
+always@(posedge CLK)begin
+    if(RESET)   counter <=8'b00000000;
+    else        counter <=counter+1;
+end
+//LED
+always@(posedge CLK)begin
+    if(RESET)LED <= 0;
+    else    begin
+        case(SW)
+            0:begin//Button Mode
+                case(modeB)
+                    1:LED<=8'b00001111;
+                    2:LED<=8'b11110000;
+                    3:if(counter==0)LED<=8'b11111111-LED;
+                    default:LED<=8'b00000000;
+                endcase
+            end
+            1:begin//Knob Mode
+                case(modeK)
+                    1:begin
+                        case(LED)
+                            8'b10000000:LED<=8'b11000000;
+                            8'b11000000:LED<=8'b11100000;
+                            8'b11100000:LED<=8'b11110000;
+                            8'b11110000:LED<=8'b11111000;
+                            8'b11111000:LED<=8'b11111100;
+                            8'b11111100:LED<=8'b11111110;
+                            8'b11111110:LED<=8'b11111111;
+                            default:    LED<=8'b10000000;
+                        endcase
+                    end
+                    2:begin
+                        case(LED)
+                            8'b00000001:LED<=8'b00000011;
+                            8'b00000011:LED<=8'b00000111;
+                            8'b00000111:LED<=8'b00001111;
+                            8'b00001111:LED<=8'b00011111;
+                            8'b00011111:LED<=8'b00111111;
+                            8'b00111111:LED<=8'b01111111;
+                            8'b01111111:LED<=8'b11111111;
+                            default:    LED<=8'b00000001;
+                        endcase
+                    end
+                    3:LED<=8'b11111111;
+                    default:LED<=LED;
+                endcase
+            end
+            2:begin//Keyboard Mode
+                LED<=DATA;
+            end
+        endcase
+    end
+end
+
+//module call
+keyboard i_keyboard( .clk(CLK), .reset(RESET), .KCLK(KCLK) , .KDAT(KDAT),
+.DATA(DATA) );
+endmodule
+
+
+
+
+
+//keyboard.v
+
+`timescale 1ns / 1ps
+
+module keyboard( clk, reset, KCLK, KDAT, DATA);
+
+input clk, reset;
+input KCLK, KDAT;
+output [7:0] DATA;
+
+reg [1:0] state;
+reg [21:0] K;
+reg [3:0] counter;
+reg [7:0] DATA,code;
+reg start;
+wire check = K[1] ^ K[2] ^ K[3] ^ K[4] ^ K[5] ^ K[6] ^ K[7] ^ K[8] ^ K[9];
+
+//state
+always@(posedge clk)begin
+    if(reset)state<=0;
+    else if(KCLK!=state[0])state<={state[0],KCLK};
+end
+
+//counter
+always@(posedge clk)begin
+    if(reset || counter >11)counter<=0;
+    else if(state=2'b01) counter<=counter+1;
+end
+
+//K
+always@(posedge clk)begin
+    if(reset) K<=22'b11_00000000_0_11_00000000_0;
+    else if(state=2'b01) K<={KDAT,K[21:1]};
+end
+
+//code
+always@(posedge clk)begin
+    if(reset) code<=0;
+    else if(check && !counter) begin
+        if(K[8:1]==8'hf0) code<=0;
+        else code<=K[19:12];
+    end
+end
+
+//DATA
+always@(posedge clk)begin
+    if(reset)DATA <= 8'd0;
+    else begin
+        case(code)
+            8'h16:  DATA <= 8'd1;
+            8'h1E:  DATA <= 8'd2;
+            8'h26:  DATA <= 8'd3;
+            8'h25:  DATA <= 8'd4;
+            8'h2E:  DATA <= 8'd5;
+            8'h36:  DATA <= 8'd6;
+            8'h3D:  DATA <= 8'd7;
+            8'h3E:  DATA <= 8'd8;
+            8'h46:  DATA <= 8'd9;
+            8'h45:  DATA <= 8'b1111_1111;
+            default:DATA <= 8'd0;
+        endcase
+    end
+end
+endmodule
+
+

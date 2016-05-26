@@ -1,0 +1,2793 @@
+`timescale 1ns /
+1ps
+//////////////////////////////////////////////////////////////////////////////\
+////
+//
+Company:
+// Engineer:
+//
+//
+// Design Name:
+// Module Name:    example
+// Project Name:
+// Target Devices:
+// Tool versions:
+// Description:
+//
+// Dependencies:
+//
+// Revision:
+// Revision 0.01 - File Created
+//
+Additional Comments:
+//
+//////////////////////////////////////////////////////////////////////////////\
+////
+
+module
+top(
+    input CLK,
+    input RESET,
+    input KDAT,
+    input KCLK,
+    input
+ [3:0] SWH,
+    output [7:0]LED,
+    output hsync,
+    output vsync,
+    output
+R,
+    output G,
+    output B
+    );
+
+    wire visible;
+    wire
+word,word1,word2,word3,word4,word_region,atk_region;
+    wire [9:0]  row;
+    wire
+[9:0]  row_2;
+    wire [10:0] col;
+    wire [10:0] col_2;
+
+    reg [2:0]
+ pic_cnt;//Control your pic NO.
+
+    reg row_inc;
+
+    reg [2:0]  RGB_buff;
+    reg
+[9:0]  pixel_row;
+    reg [16:0] counter;
+    reg [10:0] pixel_col;
+    reg [10:0]
+center_x , center_y;
+    reg [10:0] center_xx , center_yy;
+    reg
+SWH_old;
+    assign LED = 8'b11111111;
+    assign col = pixel_col -
+center_x;
+    assign col_2 = pixel_col - center_xx;
+    assign row = pixel_row -
+center_y;
+    assign row_2 = pixel_row - center_yy;
+    wire [7:0]DATA;
+    wire
+PS2_STATE;
+
+    keyboard kk( .clk(CLK), .reset(RESET), .KCLK(KCLK), .KDAT(KDAT),
+.DATA(DATA));
+    WORD word_1(.word(word),
+.word1(word1),.word2(word2),.word3(word3),.pic_cnt(pic_cnt), .row(row[6:3]),
+.col(col[6:3]), .reset(RESET));
+    ATK
+word_2(.word(word4),.pic_cnt(pic_cnt),.row(row_2[6:3]), .col(col_2[6:3]),
+.reset(RESET));
+    always@( posedge CLK or posedge RESET ) begin
+        if( RESET )
+counter <= 0;
+        else counter<=counter+1;
+    end
+    always@(posedge
+CLK)begin
+        if(RESET)   SWH_old <= SWH[0];
+        else SWH_old <=
+SWH[0];
+    end
+
+
+
+
+//======choose your pic num.=========
+
+    always@(
+posedge CLK or posedge RESET ) begin
+        if( RESET ) pic_cnt <= 0;
+        else
+if(!SWH[0]) pic_cnt <=0;
+        else if(SWH[0]) pic_cnt
+<=1;
+    end
+
+//===========Region==================
+
+    assign word_region = (
+pixel_col >= center_x ) & ( pixel_col < center_x + 128 ) &
+                         ( pixel_row
+>= center_y ) & ( pixel_row < center_y + 128 );
+    assign atk_region = (
+pixel_col >= center_xx ) & ( pixel_col < center_xx + 128 ) &
+                         (
+pixel_row >= center_yy ) & ( pixel_row < center_yy + 128 );
+
+
+ //-------------------//
+    //   WORD POSITION
+//
+    //-------------------//
+
+
+    always@( posedge CLK or posedge RESET)
+begin
+        if( RESET ) RGB_buff <= 3'b000;
+        else if( word_region & word )
+RGB_buff <= { 1'b0, 1'b0, 1'b0 };
+        else if( word_region & word1 ) RGB_buff
+<= { 1'b1, 1'b0, 1'b0 };
+        else if( word_region & word2 ) RGB_buff <= { 1'b1,
+1'b1, 1'b1 };
+        else if( word_region & word3 ) RGB_buff <= { 1'b1, 1'b1, 1'b0
+};
+        else if( atk_region & word4 ) RGB_buff <= { 1'b0, 1'b1, 1'b1
+};
+
+        //Modify
+
+        else RGB_buff <= 3'b101;
+    end
+
+    // RGB
+
+    assign R = (
+visible )? RGB_buff[2] : 0;
+    assign G = ( visible )? RGB_buff[1] : 0;
+    assign
+B = ( visible )? RGB_buff[0] : 0;
+
+
+
+
+
+
+
+ //===================Location===========================
+
+
+    always
+@(posedge CLK or posedge RESET)begin
+        if( RESET ) center_y <= 200;//set your
+location
+        else if(center_y>23 && DATA==8'h1D &&
+counter==0)center_y<=center_y-1;
+        else if(center_y<495 && DATA==8'h1B &&
+counter==0)center_y<=center_y+1;
+    end
+
+    always @(posedge CLK or posedge
+RESET)begin
+        if( RESET) center_x <= 300;//set your location
+        else
+if(center_x>104 &&  DATA==8'h1C && counter==0)center_x<=center_x-1;
+        else
+if(center_x<776 &&  DATA==8'h23 &&
+counter==0)center_x<=center_x+1;
+    end
+
+    always @(posedge CLK or posedge
+RESET)begin
+        if( RESET ) center_yy <= 200;//set your location
+        else
+if(center_xx>776 )center_yy<=center_y;
+        else
+if(SWH_old!=SWH[0])center_yy<=center_y;
+    end
+
+    always @(posedge CLK or
+posedge RESET)begin
+        if( RESET) center_xx <= 428;//set your location
+        else
+if(center_xx>776)center_xx<=center_x+128;
+        else
+if(SWH_old!=SWH[0])center_xx<=center_x+128;
+        else
+if(counter==0)center_xx<=center_xx+1;
+    end
+
+
+
+    //---------------//
+    //
+  SCAN      //
+    //---------------//
+
+    always@( posedge CLK ) begin
+        if(
+RESET ) pixel_col <=0;
+        else if( pixel_col == 1039 ) pixel_col <= 0;
+        else
+pixel_col <= pixel_col + 1;
+    end
+
+    always@( posedge CLK ) begin
+        if( RESET
+) row_inc <= 0;
+        else if( pixel_col == 1039 ) row_inc <= 1;
+        else row_inc
+<= 0;
+    end
+
+    always@( posedge CLK )begin
+        if( RESET ) pixel_row <=
+0;
+        else if ( pixel_row == 665 ) pixel_row <= 0;
+        else if ( row_inc )
+pixel_row <= pixel_row + 1;
+        else pixel_row <= pixel_row;
+    end
+
+    assign
+hsync = ~( (pixel_col >= 919) & (pixel_col < 1039) );
+    assign vsync = ~(
+(pixel_row >= 659) & (pixel_row < 665) ) ;
+    assign visible = ( (pixel_col >
+104) & (pixel_col < 904 ) & (pixel_row > 23) & (pixel_row < 623)
+);
+
+            /*
+            line_a <= 16'b0000000000000000;
+            line_b <=
+16'b0000000000000000;
+            line_c <= 16'b0000000000000000;
+            line_d <=
+16'b0001100000011000;
+            line_e <= 16'b0001100000011000;
+            line_f <=
+16'b0001100000011000;
+            line_g <= 16'b0001100000011000;
+            line_h <=
+16'b0001100000011000;
+            line_i <= 16'b0000000000000000;
+            line_j <=
+16'b1100000000000011;
+            line_k <= 16'b0111000000001110;
+            line_l <=
+16'b0001110000111000;
+            line_m <= 16'b0000011111100000;
+            line_n <=
+16'b0000000110000000;
+            line_o <= 16'b0000000000000000;
+            line_p <=
+16'b0000000000000000;*/
+
+endmodule
+
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//
+
+  //
+//                              WORD
+          //
+//
+
+//
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//////////////////////////////////////////////////////////////////////////////\
+///////
+//////////////////////////////////////////////////////////////////////////////\
+///////
+module
+ATK(
+  //output
+  word,
+  //input
+  pic_cnt,row, col, reset);
+input [3:0]
+row;
+input [3:0] col;
+input [2:0] pic_cnt;
+input reset ;
+output word;
+reg
+word;
+reg [15:0] line_a,line_b,line_c,line_d,line_e,line_f,line_g,line_h,
+
+  line_i,line_j,line_k,line_l,line_m,line_n,line_o,line_p;
+always @ (pic_cnt)
+begin
+    case( pic_cnt )
+        0: begin
+            line_a <=
+16'b0000000000000000;
+            line_b <= 16'b0000000000000000;
+            line_c <=
+16'b0000000000000000;
+            line_d <= 16'b0000000000000000;
+            line_e <=
+16'b0000000000000000;
+            line_f <= 16'b0000000000000000;
+            line_g <=
+16'b0000000000000000;
+            line_h <= 16'b0000000000000000;
+            line_i <=
+16'b0000000000000000;
+            line_j <= 16'b0000000000000000;
+            line_k <=
+16'b0000000000000000;
+            line_l <= 16'b0000000000000000;
+            line_m <=
+16'b0000000000000000;
+            line_n <= 16'b0000000000000000;
+            line_o <=
+16'b0000000000000000;
+            line_p <= 16'b0000000000000000;
+           end
+
+ 1:begin
+            line_a <= 16'b0000000000000000;
+            line_b <=
+16'b0000000000000000;
+            line_c <= 16'b0000000000000000;
+            line_d <=
+16'b0000000000000000;
+            line_e <= 16'b0000000000111110;
+            line_f <=
+16'b0000000001111111;
+            line_g <= 16'b0000000001111111;
+            line_h <=
+16'b1010101011111111;
+            line_i <= 16'b0101010101111111;
+            line_j <=
+16'b0000000101111111;
+            line_k <= 16'b0000000001111111;
+            line_l <=
+16'b0000000000111110;
+            line_m <= 16'b0000000000000000;
+            line_n <=
+16'b0000000000000000;
+            line_o <= 16'b0000000000000000;
+            line_p <=
+16'b0000000000000000;
+            end
+    endcase
+end
+always @ (*) begin
+    case( { row,
+col } )
+        8'b0000_0000: word <= line_a[15];
+        8'b0000_0001: word <=
+line_a[14];
+        8'b0000_0010: word <= line_a[13];
+        8'b0000_0011: word <=
+line_a[12];
+        8'b0000_0100: word <= line_a[11];
+        8'b0000_0101: word <=
+line_a[10];
+        8'b0000_0110: word <= line_a[9];
+        8'b0000_0111: word <=
+line_a[8];
+        8'b0000_1000: word <= line_a[7];
+        8'b0000_1001: word <=
+line_a[6];
+        8'b0000_1010: word <= line_a[5];
+        8'b0000_1011: word <=
+line_a[4];
+        8'b0000_1100: word <= line_a[3];
+        8'b0000_1101: word <=
+line_a[2];
+        8'b0000_1110: word <= line_a[1];
+        8'b0000_1111: word <=
+line_a[0];
+
+        8'b0001_0000: word <= line_b[15];
+        8'b0001_0001: word <=
+line_b[14];
+        8'b0001_0010: word <= line_b[13];
+        8'b0001_0011: word <=
+line_b[12];
+        8'b0001_0100: word <= line_b[11];
+        8'b0001_0101: word <=
+line_b[10];
+        8'b0001_0110: word <= line_b[9];
+        8'b0001_0111: word <=
+line_b[8];
+        8'b0001_1000: word <= line_b[7];
+        8'b0001_1001: word <=
+line_b[6];
+        8'b0001_1010: word <= line_b[5];
+        8'b0001_1011: word <=
+line_b[4];
+        8'b0001_1100: word <= line_b[3];
+        8'b0001_1101: word <=
+line_b[2];
+        8'b0001_1110: word <= line_b[1];
+        8'b0001_1111: word <=
+line_b[0];
+
+        8'b0010_0000: word <= line_c[15];
+        8'b0010_0001: word <=
+line_c[14];
+        8'b0010_0010: word <= line_c[13];
+        8'b0010_0011: word <=
+line_c[12];
+        8'b0010_0100: word <= line_c[11];
+        8'b0010_0101: word <=
+line_c[10];
+        8'b0010_0110: word <= line_c[9];
+        8'b0010_0111: word <=
+line_c[8];
+        8'b0010_1000: word <= line_c[7];
+        8'b0010_1001: word <=
+line_c[6];
+        8'b0010_1010: word <= line_c[5];
+        8'b0010_1011: word <=
+line_c[4];
+        8'b0010_1100: word <= line_c[3];
+        8'b0010_1101: word <=
+line_c[2];
+        8'b0010_1110: word <= line_c[1];
+        8'b0010_1111: word <=
+line_c[0];
+
+        8'b0011_0000: word <= line_d[15];
+        8'b0011_0001: word <=
+line_d[14];
+        8'b0011_0010: word <= line_d[13];
+        8'b0011_0011: word <=
+line_d[12];
+        8'b0011_0100: word <= line_d[11];
+        8'b0011_0101: word <=
+line_d[10];
+        8'b0011_0110: word <= line_d[9];
+        8'b0011_0111: word <=
+line_d[8];
+        8'b0011_1000: word <= line_d[7];
+        8'b0011_1001: word <=
+line_d[6];
+        8'b0011_1010: word <= line_d[5];
+        8'b0011_1011: word <=
+line_d[4];
+        8'b0011_1100: word <= line_d[3];
+        8'b0011_1101: word <=
+line_d[2];
+        8'b0011_1110: word <= line_d[1];
+        8'b0011_1111: word <=
+line_d[0];
+
+        8'b0100_0000: word <= line_e[15];
+        8'b0100_0001: word <=
+line_e[14];
+        8'b0100_0010: word <= line_e[13];
+        8'b0100_0011: word <=
+line_e[12];
+        8'b0100_0100: word <= line_e[11];
+        8'b0100_0101: word <=
+line_e[10];
+        8'b0100_0110: word <= line_e[9];
+        8'b0100_0111: word <=
+line_e[8];
+        8'b0100_1000: word <= line_e[7];
+        8'b0100_1001: word <=
+line_e[6];
+        8'b0100_1010: word <= line_e[5];
+        8'b0100_1011: word <=
+line_e[4];
+        8'b0100_1100: word <= line_e[3];
+        8'b0100_1101: word <=
+line_e[2];
+        8'b0100_1110: word <= line_e[1];
+        8'b0100_1111: word <=
+line_e[0];
+
+        8'b0101_0000: word <= line_f[15];
+        8'b0101_0001: word <=
+line_f[14];
+        8'b0101_0010: word <= line_f[13];
+        8'b0101_0011: word <=
+line_f[12];
+        8'b0101_0100: word <= line_f[11];
+        8'b0101_0101: word <=
+line_f[10];
+        8'b0101_0110: word <= line_f[9];
+        8'b0101_0111: word <=
+line_f[8];
+        8'b0101_1000: word <= line_f[7];
+        8'b0101_1001: word <=
+line_f[6];
+        8'b0101_1010: word <= line_f[5];
+        8'b0101_1011: word <=
+line_f[4];
+        8'b0101_1100: word <= line_f[3];
+        8'b0101_1101: word <=
+line_f[2];
+        8'b0101_1110: word <= line_f[1];
+        8'b0101_1111: word <=
+line_f[0];
+
+        8'b0110_0000: word <= line_g[15];
+        8'b0110_0001: word <=
+line_g[14];
+        8'b0110_0010: word <= line_g[13];
+        8'b0110_0011: word <=
+line_g[12];
+        8'b0110_0100: word <= line_g[11];
+        8'b0110_0101: word <=
+line_g[10];
+        8'b0110_0110: word <= line_g[9];
+        8'b0110_0111: word <=
+line_g[8];
+        8'b0110_1000: word <= line_g[7];
+        8'b0110_1001: word <=
+line_g[6];
+        8'b0110_1010: word <= line_g[5];
+        8'b0110_1011: word <=
+line_g[4];
+        8'b0110_1100: word <= line_g[3];
+        8'b0110_1101: word <=
+line_g[2];
+        8'b0110_1110: word <= line_g[1];
+        8'b0110_1111: word <=
+line_g[0];
+
+        8'b0111_0000: word <= line_h[15];
+        8'b0111_0001: word <=
+line_h[14];
+        8'b0111_0010: word <= line_h[13];
+        8'b0111_0011: word <=
+line_h[12];
+        8'b0111_0100: word <= line_h[11];
+        8'b0111_0101: word <=
+line_h[10];
+        8'b0111_0110: word <= line_h[9];
+        8'b0111_0111: word <=
+line_h[8];
+        8'b0111_1000: word <= line_h[7];
+        8'b0111_1001: word <=
+line_h[6];
+        8'b0111_1010: word <= line_h[5];
+        8'b0111_1011: word <=
+line_h[4];
+        8'b0111_1100: word <= line_h[3];
+        8'b0111_1101: word <=
+line_h[2];
+        8'b0111_1110: word <= line_h[1];
+        8'b0111_1111: word <=
+line_h[0];
+
+        8'b1000_0000: word <= line_i[15];
+        8'b1000_0001: word <=
+line_i[14];
+        8'b1000_0010: word <= line_i[13];
+        8'b1000_0011: word <=
+line_i[12];
+        8'b1000_0100: word <= line_i[11];
+        8'b1000_0101: word <=
+line_i[10];
+        8'b1000_0110: word <= line_i[9];
+        8'b1000_0111: word <=
+line_i[8];
+        8'b1000_1000: word <= line_i[7];
+        8'b1000_1001: word <=
+line_i[6];
+        8'b1000_1010: word <= line_i[5];
+        8'b1000_1011: word <=
+line_i[4];
+        8'b1000_1100: word <= line_i[3];
+        8'b1000_1101: word <=
+line_i[2];
+        8'b1000_1110: word <= line_i[1];
+        8'b1000_1111: word <=
+line_i[0];
+
+        8'b1001_0000: word <= line_j[15];
+        8'b1001_0001: word <=
+line_j[14];
+        8'b1001_0010: word <= line_j[13];
+        8'b1001_0011: word <=
+line_j[12];
+        8'b1001_0100: word <= line_j[11];
+        8'b1001_0101: word <=
+line_j[10];
+        8'b1001_0110: word <= line_j[9];
+        8'b1001_0111: word <=
+line_j[8];
+        8'b1001_1000: word <= line_j[7];
+        8'b1001_1001: word <=
+line_j[6];
+        8'b1001_1010: word <= line_j[5];
+        8'b1001_1011: word <=
+line_j[4];
+        8'b1001_1100: word <= line_j[3];
+        8'b1001_1101: word <=
+line_j[2];
+        8'b1001_1110: word <= line_j[1];
+        8'b1001_1111: word <=
+line_j[0];
+
+        8'b1010_0000: word <= line_k[15];
+        8'b1010_0001: word <=
+line_k[14];
+        8'b1010_0010: word <= line_k[13];
+        8'b1010_0011: word <=
+line_k[12];
+        8'b1010_0100: word <= line_k[11];
+        8'b1010_0101: word <=
+line_k[10];
+        8'b1010_0110: word <= line_k[9];
+        8'b1010_0111: word <=
+line_k[8];
+        8'b1010_1000: word <= line_k[7];
+        8'b1010_1001: word <=
+line_k[6];
+        8'b1010_1010: word <= line_k[5];
+        8'b1010_1011: word <=
+line_k[4];
+        8'b1010_1100: word <= line_k[3];
+        8'b1010_1101: word <=
+line_k[2];
+        8'b1010_1110: word <= line_k[1];
+        8'b1010_1111: word <=
+line_k[0];
+
+        8'b1011_0000: word <= line_l[15];
+        8'b1011_0001: word <=
+line_l[14];
+        8'b1011_0010: word <= line_l[13];
+        8'b1011_0011: word <=
+line_l[12];
+        8'b1011_0100: word <= line_l[11];
+        8'b1011_0101: word <=
+line_l[10];
+        8'b1011_0110: word <= line_l[9];
+        8'b1011_0111: word <=
+line_l[8];
+        8'b1011_1000: word <= line_l[7];
+        8'b1011_1001: word <=
+line_l[6];
+        8'b1011_1010: word <= line_l[5];
+        8'b1011_1011: word <=
+line_l[4];
+        8'b1011_1100: word <= line_l[3];
+        8'b1011_1101: word <=
+line_l[2];
+        8'b1011_1110: word <= line_l[1];
+        8'b1011_1111: word <=
+line_l[0];
+
+        8'b1100_0000: word <= line_m[15];
+        8'b1100_0001: word <=
+line_m[14];
+        8'b1100_0010: word <= line_m[13];
+        8'b1100_0011: word <=
+line_m[12];
+        8'b1100_0100: word <= line_m[11];
+        8'b1100_0101: word <=
+line_m[10];
+        8'b1100_0110: word <= line_m[9];
+        8'b1100_0111: word <=
+line_m[8];
+        8'b1100_1000: word <= line_m[7];
+        8'b1100_1001: word <=
+line_m[6];
+        8'b1100_1010: word <= line_m[5];
+        8'b1100_1011: word <=
+line_m[4];
+        8'b1100_1100: word <= line_m[3];
+        8'b1100_1101: word <=
+line_m[2];
+        8'b1100_1110: word <= line_m[1];
+        8'b1100_1111: word <=
+line_m[0];
+
+        8'b1101_0000: word <= line_n[15];
+        8'b1101_0001: word <=
+line_n[14];
+        8'b1101_0010: word <= line_n[13];
+        8'b1101_0011: word <=
+line_n[12];
+        8'b1101_0100: word <= line_n[11];
+        8'b1101_0101: word <=
+line_n[10];
+        8'b1101_0110: word <= line_n[9];
+        8'b1101_0111: word <=
+line_n[8];
+        8'b1101_1000: word <= line_n[7];
+        8'b1101_1001: word <=
+line_n[6];
+        8'b1101_1010: word <= line_n[5];
+        8'b1101_1011: word <=
+line_n[4];
+        8'b1101_1100: word <= line_n[3];
+        8'b1101_1101: word <=
+line_n[2];
+        8'b1101_1110: word <= line_n[1];
+        8'b1101_1111: word <=
+line_n[0];
+
+        8'b1110_0000: word <= line_o[15];
+        8'b1110_0001: word <=
+line_o[14];
+        8'b1110_0010: word <= line_o[13];
+        8'b1110_0011: word <=
+line_o[12];
+        8'b1110_0100: word <= line_o[11];
+        8'b1110_0101: word <=
+line_o[10];
+        8'b1110_0110: word <= line_o[9];
+        8'b1110_0111: word <=
+line_o[8];
+        8'b1110_1000: word <= line_o[7];
+        8'b1110_1001: word <=
+line_o[6];
+        8'b1110_1010: word <= line_o[5];
+        8'b1110_1011: word <=
+line_o[4];
+        8'b1110_1100: word <= line_o[3];
+        8'b1110_1101: word <=
+line_o[2];
+        8'b1110_1110: word <= line_o[1];
+        8'b1110_1111: word <=
+line_o[0];
+
+        8'b1111_0000: word <= line_p[15];
+        8'b1111_0001: word <=
+line_p[14];
+        8'b1111_0010: word <= line_p[13];
+        8'b1111_0011: word <=
+line_p[12];
+        8'b1111_0100: word <= line_p[11];
+        8'b1111_0101: word <=
+line_p[10];
+        8'b1111_0110: word <= line_p[9];
+        8'b1111_0111: word <=
+line_p[8];
+        8'b1111_1000: word <= line_p[7];
+        8'b1111_1001: word <=
+line_p[6];
+        8'b1111_1010: word <= line_p[5];
+        8'b1111_1011: word <=
+line_p[4];
+        8'b1111_1100: word <= line_p[3];
+        8'b1111_1101: word <=
+line_p[2];
+        8'b1111_1110: word <= line_p[1];
+        8'b1111_1111: word <=
+line_p[0];
+    endcase
+end
+endmodule
+
+module WORD(
+  //output
+  word,
+  word1,
+
+ word2,
+  word3,
+  //input
+  pic_cnt, row, col, reset);
+input [3:0]
+row;
+input [3:0] col;
+input [2:0] pic_cnt;
+input reset ;
+output
+word,word1,word2,word3;
+reg word,word1,word2,word3;
+reg [15:0]
+line_a,line_b,line_c,line_d,line_e,line_f,line_g,line_h,
+
+line_i,line_j,line_k,line_l,line_m,line_n,line_o,line_p,
+
+
+line_a1,line_b1,line_c1,line_d1,line_e1,line_f1,line_g1,line_h1,
+
+line_i1,line_j1,line_k1,line_l1,line_m1,line_n1,line_o1,line_p1,
+
+
+line_a2,line_b2,line_c2,line_d2,line_e2,line_f2,line_g2,line_h2,
+
+line_i2,line_j2,line_k2,line_l2,line_m2,line_n2,line_o2,line_p2,
+
+
+line_a3,line_b3,line_c3,line_d3,line_e3,line_f3,line_g3,line_h3,
+
+line_i3,line_j3,line_k3,line_l3,line_m3,line_n3,line_o3,line_p3;
+
+//BLACK
+always@( pic_cnt ) begin
+    case( pic_cnt )
+        0: begin
+            line_a <=
+16'b0000111111000000;
+            line_b <= 16'b0000000000000000;
+            line_c <=
+16'b0001111001000000;
+            line_d <= 16'b0001010001000000;
+            line_e <=
+16'b0001000000000000;
+            line_f <= 16'b0001100000000000;
+            line_g <=
+16'b0000000000000000;
+            line_h <= 16'b0000000000000000;
+            line_i <=
+16'b0000000000000000;
+            line_j <= 16'b0000000000000000;
+            line_k <=
+16'b0000000000000000;
+            line_l <= 16'b0000011111100000;
+            line_m <=
+16'b0000001010000000;
+            line_n <= 16'b0000000000000000;
+            line_o <=
+16'b0000000000000000;
+            line_p <= 16'b0000000000000000;
+           end
+
+ 1:begin
+            line_a <= 16'b0000111111000000;
+            line_b <=
+16'b0000000000000000;
+            line_c <= 16'b0001111001000000;
+            line_d <=
+16'b0001010001000000;
+            line_e <= 16'b0001000000000000;
+            line_f <=
+16'b0001100000000000;
+            line_g <= 16'b0000000000000000;
+            line_h <=
+16'b0000000000000000;
+            line_i <= 16'b0000000000000000;
+            line_j <=
+16'b0000000000000000;
+            line_k <= 16'b0000000000000000;
+            line_l <=
+16'b0000011111100000;
+            line_m <= 16'b0000001010000000;
+            line_n <=
+16'b0000000000000000;
+            line_o <= 16'b0000000000000000;
+            line_p <=
+16'b0000000000000000;
+            end
+    endcase
+end
+
+//RED
+always@( pic_cnt )begin
+
+ case( pic_cnt )
+        0: begin
+            line_a1 <= 16'b0000000000000000;
+            line_b1 <=
+16'b0001111111100000;
+            line_c1 <= 16'b0010000000000000;
+            line_d1 <=
+16'b0100000000000000;
+            line_e1 <= 16'b0100000000000000;
+            line_f1 <=
+16'b0000000000000000;
+            line_g1 <= 16'b0000000000000000;
+            line_h1 <=
+16'b0000000000000000;
+            line_i1 <= 16'b0000000000000000;
+            line_j1 <=
+16'b0000000000000000;
+            line_k1 <= 16'b0111000000011100;
+            line_l1 <=
+16'b0110000000000100;
+            line_m1 <= 16'b0110000000000000;
+            line_n1 <=
+16'b0000000000000000;
+            line_o1 <= 16'b0000000000000000;
+            line_p1 <=
+16'b0000000000000000;
+           end
+        1: begin
+            line_a1 <=
+16'b0000000000000000;
+            line_b1 <= 16'b0001111111100000;
+            line_c1 <=
+16'b0010000000000000;
+            line_d1 <= 16'b0100000000000000;
+            line_e1 <=
+16'b0100000000000000;
+            line_f1 <= 16'b0000000000000000;
+            line_g1 <=
+16'b0000000000000000;
+            line_h1 <= 16'b0000000000000000;
+            line_i1 <=
+16'b0000000000000100;
+            line_j1 <= 16'b0000000000000100;
+            line_k1 <=
+16'b0111000000000000;
+            line_l1 <= 16'b0110000000000000;
+            line_m1 <=
+16'b0110000000000000;
+            line_n1 <= 16'b0000000000000000;
+            line_o1 <=
+16'b0000000000000000;
+            line_p1 <= 16'b0000000000000000;
+           end
+
+ endcase
+end
+
+//white
+always@( pic_cnt )begin
+    case( pic_cnt )
+        0:
+begin
+            line_a2 <= 16'b0000000000000000;
+            line_b2 <=
+16'b0000000000000000;
+            line_c2 <= 16'b0000000000000000;
+            line_d2 <=
+16'b0000000000000000;
+            line_e2 <= 16'b0000000000000000;
+            line_f2 <=
+16'b0000000000000000;
+            line_g2 <= 16'b0000000000000000;
+            line_h2 <=
+16'b0000110001000000;
+            line_i2 <= 16'b0000011011000000;
+            line_j2 <=
+16'b0000011111100000;
+            line_k2 <= 16'b0000111111100000;
+            line_l2 <=
+16'b0000000000000000;
+            line_m2 <= 16'b0000110101110000;
+            line_n2 <=
+16'b0001111111110000;
+            line_o2 <= 16'b0011110001111000;
+            line_p2 <=
+16'b0000000000000000;
+           end
+        1: begin
+            line_a2 <=
+16'b0000000000000000;
+            line_b2 <= 16'b0000000000000000;
+            line_c2 <=
+16'b0000000000000000;
+            line_d2 <= 16'b0000000000000000;
+            line_e2 <=
+16'b0000000000000000;
+            line_f2 <= 16'b0000000000000000;
+            line_g2 <=
+16'b0000000000000000;
+            line_h2 <= 16'b0000110001000000;
+            line_i2 <=
+16'b0000011011000000;
+            line_j2 <= 16'b0000011111100000;
+            line_k2 <=
+16'b0000111111100000;
+            line_l2 <= 16'b0000000000000000;
+            line_m2 <=
+16'b0000110101110000;
+            line_n2 <= 16'b0001111111110000;
+            line_o2 <=
+16'b0011110001111000;
+            line_p2 <= 16'b0000000000000000;
+           end
+
+ endcase
+end
+
+//yellow
+always@( pic_cnt )begin
+    case( pic_cnt )
+        0:
+begin
+            line_a3 <= 16'b0000000000000000;
+            line_b3 <=
+16'b0000000000000000;
+            line_c3 <= 16'b0000000110100000;
+            line_d3 <=
+16'b0000101110100000;
+            line_e3 <= 16'b0000111111110000;
+            line_f3 <=
+16'b0000011111100000;
+            line_g3 <= 16'b0000011111100000;
+            line_h3 <=
+16'b0001001110000000;
+            line_i3 <= 16'b0011100100110000;
+            line_j3 <=
+16'b0111100000011000;
+            line_k3 <= 16'b0000000000000000;
+            line_l3 <=
+16'b0001100000011000;
+            line_m3 <= 16'b0001000000001100;
+            line_n3 <=
+16'b0000000000000000;
+            line_o3 <= 16'b0000000000000000;
+            line_p3 <=
+16'b0111110001111100;
+           end
+        1: begin
+            line_a3 <=
+16'b0000000000000000;
+            line_b3 <= 16'b0000000000000000;
+            line_c3 <=
+16'b0000000110100000;
+            line_d3 <= 16'b0000101110100000;
+            line_e3 <=
+16'b0000111111110000;
+            line_f3 <= 16'b0000011111100000;
+            line_g3 <=
+16'b0000011111100000;
+            line_h3 <= 16'b0001001110000000;
+            line_i3 <=
+16'b0011100100111010;
+            line_j3 <= 16'b0111100000011010;
+            line_k3 <=
+16'b0000000000000000;
+            line_l3 <= 16'b0001100000000000;
+            line_m3 <=
+16'b0001000000000000;
+            line_n3 <= 16'b0000000000000000;
+            line_o3 <=
+16'b0000000000000000;
+            line_p3 <= 16'b0111110001111100;
+           end
+
+ endcase
+end
+
+
+
+always @ (*) begin
+    case( { row, col } )
+        8'b0000_0000: word
+<= line_a[15];
+        8'b0000_0001: word <= line_a[14];
+        8'b0000_0010: word <=
+line_a[13];
+        8'b0000_0011: word <= line_a[12];
+        8'b0000_0100: word <=
+line_a[11];
+        8'b0000_0101: word <= line_a[10];
+        8'b0000_0110: word <=
+line_a[9];
+        8'b0000_0111: word <= line_a[8];
+        8'b0000_1000: word <=
+line_a[7];
+        8'b0000_1001: word <= line_a[6];
+        8'b0000_1010: word <=
+line_a[5];
+        8'b0000_1011: word <= line_a[4];
+        8'b0000_1100: word <=
+line_a[3];
+        8'b0000_1101: word <= line_a[2];
+        8'b0000_1110: word <=
+line_a[1];
+        8'b0000_1111: word <= line_a[0];
+
+        8'b0001_0000: word <=
+line_b[15];
+        8'b0001_0001: word <= line_b[14];
+        8'b0001_0010: word <=
+line_b[13];
+        8'b0001_0011: word <= line_b[12];
+        8'b0001_0100: word <=
+line_b[11];
+        8'b0001_0101: word <= line_b[10];
+        8'b0001_0110: word <=
+line_b[9];
+        8'b0001_0111: word <= line_b[8];
+        8'b0001_1000: word <=
+line_b[7];
+        8'b0001_1001: word <= line_b[6];
+        8'b0001_1010: word <=
+line_b[5];
+        8'b0001_1011: word <= line_b[4];
+        8'b0001_1100: word <=
+line_b[3];
+        8'b0001_1101: word <= line_b[2];
+        8'b0001_1110: word <=
+line_b[1];
+        8'b0001_1111: word <= line_b[0];
+
+        8'b0010_0000: word <=
+line_c[15];
+        8'b0010_0001: word <= line_c[14];
+        8'b0010_0010: word <=
+line_c[13];
+        8'b0010_0011: word <= line_c[12];
+        8'b0010_0100: word <=
+line_c[11];
+        8'b0010_0101: word <= line_c[10];
+        8'b0010_0110: word <=
+line_c[9];
+        8'b0010_0111: word <= line_c[8];
+        8'b0010_1000: word <=
+line_c[7];
+        8'b0010_1001: word <= line_c[6];
+        8'b0010_1010: word <=
+line_c[5];
+        8'b0010_1011: word <= line_c[4];
+        8'b0010_1100: word <=
+line_c[3];
+        8'b0010_1101: word <= line_c[2];
+        8'b0010_1110: word <=
+line_c[1];
+        8'b0010_1111: word <= line_c[0];
+
+        8'b0011_0000: word <=
+line_d[15];
+        8'b0011_0001: word <= line_d[14];
+        8'b0011_0010: word <=
+line_d[13];
+        8'b0011_0011: word <= line_d[12];
+        8'b0011_0100: word <=
+line_d[11];
+        8'b0011_0101: word <= line_d[10];
+        8'b0011_0110: word <=
+line_d[9];
+        8'b0011_0111: word <= line_d[8];
+        8'b0011_1000: word <=
+line_d[7];
+        8'b0011_1001: word <= line_d[6];
+        8'b0011_1010: word <=
+line_d[5];
+        8'b0011_1011: word <= line_d[4];
+        8'b0011_1100: word <=
+line_d[3];
+        8'b0011_1101: word <= line_d[2];
+        8'b0011_1110: word <=
+line_d[1];
+        8'b0011_1111: word <= line_d[0];
+
+        8'b0100_0000: word <=
+line_e[15];
+        8'b0100_0001: word <= line_e[14];
+        8'b0100_0010: word <=
+line_e[13];
+        8'b0100_0011: word <= line_e[12];
+        8'b0100_0100: word <=
+line_e[11];
+        8'b0100_0101: word <= line_e[10];
+        8'b0100_0110: word <=
+line_e[9];
+        8'b0100_0111: word <= line_e[8];
+        8'b0100_1000: word <=
+line_e[7];
+        8'b0100_1001: word <= line_e[6];
+        8'b0100_1010: word <=
+line_e[5];
+        8'b0100_1011: word <= line_e[4];
+        8'b0100_1100: word <=
+line_e[3];
+        8'b0100_1101: word <= line_e[2];
+        8'b0100_1110: word <=
+line_e[1];
+        8'b0100_1111: word <= line_e[0];
+
+        8'b0101_0000: word <=
+line_f[15];
+        8'b0101_0001: word <= line_f[14];
+        8'b0101_0010: word <=
+line_f[13];
+        8'b0101_0011: word <= line_f[12];
+        8'b0101_0100: word <=
+line_f[11];
+        8'b0101_0101: word <= line_f[10];
+        8'b0101_0110: word <=
+line_f[9];
+        8'b0101_0111: word <= line_f[8];
+        8'b0101_1000: word <=
+line_f[7];
+        8'b0101_1001: word <= line_f[6];
+        8'b0101_1010: word <=
+line_f[5];
+        8'b0101_1011: word <= line_f[4];
+        8'b0101_1100: word <=
+line_f[3];
+        8'b0101_1101: word <= line_f[2];
+        8'b0101_1110: word <=
+line_f[1];
+        8'b0101_1111: word <= line_f[0];
+
+        8'b0110_0000: word <=
+line_g[15];
+        8'b0110_0001: word <= line_g[14];
+        8'b0110_0010: word <=
+line_g[13];
+        8'b0110_0011: word <= line_g[12];
+        8'b0110_0100: word <=
+line_g[11];
+        8'b0110_0101: word <= line_g[10];
+        8'b0110_0110: word <=
+line_g[9];
+        8'b0110_0111: word <= line_g[8];
+        8'b0110_1000: word <=
+line_g[7];
+        8'b0110_1001: word <= line_g[6];
+        8'b0110_1010: word <=
+line_g[5];
+        8'b0110_1011: word <= line_g[4];
+        8'b0110_1100: word <=
+line_g[3];
+        8'b0110_1101: word <= line_g[2];
+        8'b0110_1110: word <=
+line_g[1];
+        8'b0110_1111: word <= line_g[0];
+
+        8'b0111_0000: word <=
+line_h[15];
+        8'b0111_0001: word <= line_h[14];
+        8'b0111_0010: word <=
+line_h[13];
+        8'b0111_0011: word <= line_h[12];
+        8'b0111_0100: word <=
+line_h[11];
+        8'b0111_0101: word <= line_h[10];
+        8'b0111_0110: word <=
+line_h[9];
+        8'b0111_0111: word <= line_h[8];
+        8'b0111_1000: word <=
+line_h[7];
+        8'b0111_1001: word <= line_h[6];
+        8'b0111_1010: word <=
+line_h[5];
+        8'b0111_1011: word <= line_h[4];
+        8'b0111_1100: word <=
+line_h[3];
+        8'b0111_1101: word <= line_h[2];
+        8'b0111_1110: word <=
+line_h[1];
+        8'b0111_1111: word <= line_h[0];
+
+        8'b1000_0000: word <=
+line_i[15];
+        8'b1000_0001: word <= line_i[14];
+        8'b1000_0010: word <=
+line_i[13];
+        8'b1000_0011: word <= line_i[12];
+        8'b1000_0100: word <=
+line_i[11];
+        8'b1000_0101: word <= line_i[10];
+        8'b1000_0110: word <=
+line_i[9];
+        8'b1000_0111: word <= line_i[8];
+        8'b1000_1000: word <=
+line_i[7];
+        8'b1000_1001: word <= line_i[6];
+        8'b1000_1010: word <=
+line_i[5];
+        8'b1000_1011: word <= line_i[4];
+        8'b1000_1100: word <=
+line_i[3];
+        8'b1000_1101: word <= line_i[2];
+        8'b1000_1110: word <=
+line_i[1];
+        8'b1000_1111: word <= line_i[0];
+
+        8'b1001_0000: word <=
+line_j[15];
+        8'b1001_0001: word <= line_j[14];
+        8'b1001_0010: word <=
+line_j[13];
+        8'b1001_0011: word <= line_j[12];
+        8'b1001_0100: word <=
+line_j[11];
+        8'b1001_0101: word <= line_j[10];
+        8'b1001_0110: word <=
+line_j[9];
+        8'b1001_0111: word <= line_j[8];
+        8'b1001_1000: word <=
+line_j[7];
+        8'b1001_1001: word <= line_j[6];
+        8'b1001_1010: word <=
+line_j[5];
+        8'b1001_1011: word <= line_j[4];
+        8'b1001_1100: word <=
+line_j[3];
+        8'b1001_1101: word <= line_j[2];
+        8'b1001_1110: word <=
+line_j[1];
+        8'b1001_1111: word <= line_j[0];
+
+        8'b1010_0000: word <=
+line_k[15];
+        8'b1010_0001: word <= line_k[14];
+        8'b1010_0010: word <=
+line_k[13];
+        8'b1010_0011: word <= line_k[12];
+        8'b1010_0100: word <=
+line_k[11];
+        8'b1010_0101: word <= line_k[10];
+        8'b1010_0110: word <=
+line_k[9];
+        8'b1010_0111: word <= line_k[8];
+        8'b1010_1000: word <=
+line_k[7];
+        8'b1010_1001: word <= line_k[6];
+        8'b1010_1010: word <=
+line_k[5];
+        8'b1010_1011: word <= line_k[4];
+        8'b1010_1100: word <=
+line_k[3];
+        8'b1010_1101: word <= line_k[2];
+        8'b1010_1110: word <=
+line_k[1];
+        8'b1010_1111: word <= line_k[0];
+
+        8'b1011_0000: word <=
+line_l[15];
+        8'b1011_0001: word <= line_l[14];
+        8'b1011_0010: word <=
+line_l[13];
+        8'b1011_0011: word <= line_l[12];
+        8'b1011_0100: word <=
+line_l[11];
+        8'b1011_0101: word <= line_l[10];
+        8'b1011_0110: word <=
+line_l[9];
+        8'b1011_0111: word <= line_l[8];
+        8'b1011_1000: word <=
+line_l[7];
+        8'b1011_1001: word <= line_l[6];
+        8'b1011_1010: word <=
+line_l[5];
+        8'b1011_1011: word <= line_l[4];
+        8'b1011_1100: word <=
+line_l[3];
+        8'b1011_1101: word <= line_l[2];
+        8'b1011_1110: word <=
+line_l[1];
+        8'b1011_1111: word <= line_l[0];
+
+        8'b1100_0000: word <=
+line_m[15];
+        8'b1100_0001: word <= line_m[14];
+        8'b1100_0010: word <=
+line_m[13];
+        8'b1100_0011: word <= line_m[12];
+        8'b1100_0100: word <=
+line_m[11];
+        8'b1100_0101: word <= line_m[10];
+        8'b1100_0110: word <=
+line_m[9];
+        8'b1100_0111: word <= line_m[8];
+        8'b1100_1000: word <=
+line_m[7];
+        8'b1100_1001: word <= line_m[6];
+        8'b1100_1010: word <=
+line_m[5];
+        8'b1100_1011: word <= line_m[4];
+        8'b1100_1100: word <=
+line_m[3];
+        8'b1100_1101: word <= line_m[2];
+        8'b1100_1110: word <=
+line_m[1];
+        8'b1100_1111: word <= line_m[0];
+
+        8'b1101_0000: word <=
+line_n[15];
+        8'b1101_0001: word <= line_n[14];
+        8'b1101_0010: word <=
+line_n[13];
+        8'b1101_0011: word <= line_n[12];
+        8'b1101_0100: word <=
+line_n[11];
+        8'b1101_0101: word <= line_n[10];
+        8'b1101_0110: word <=
+line_n[9];
+        8'b1101_0111: word <= line_n[8];
+        8'b1101_1000: word <=
+line_n[7];
+        8'b1101_1001: word <= line_n[6];
+        8'b1101_1010: word <=
+line_n[5];
+        8'b1101_1011: word <= line_n[4];
+        8'b1101_1100: word <=
+line_n[3];
+        8'b1101_1101: word <= line_n[2];
+        8'b1101_1110: word <=
+line_n[1];
+        8'b1101_1111: word <= line_n[0];
+
+        8'b1110_0000: word <=
+line_o[15];
+        8'b1110_0001: word <= line_o[14];
+        8'b1110_0010: word <=
+line_o[13];
+        8'b1110_0011: word <= line_o[12];
+        8'b1110_0100: word <=
+line_o[11];
+        8'b1110_0101: word <= line_o[10];
+        8'b1110_0110: word <=
+line_o[9];
+        8'b1110_0111: word <= line_o[8];
+        8'b1110_1000: word <=
+line_o[7];
+        8'b1110_1001: word <= line_o[6];
+        8'b1110_1010: word <=
+line_o[5];
+        8'b1110_1011: word <= line_o[4];
+        8'b1110_1100: word <=
+line_o[3];
+        8'b1110_1101: word <= line_o[2];
+        8'b1110_1110: word <=
+line_o[1];
+        8'b1110_1111: word <= line_o[0];
+
+        8'b1111_0000: word <=
+line_p[15];
+        8'b1111_0001: word <= line_p[14];
+        8'b1111_0010: word <=
+line_p[13];
+        8'b1111_0011: word <= line_p[12];
+        8'b1111_0100: word <=
+line_p[11];
+        8'b1111_0101: word <= line_p[10];
+        8'b1111_0110: word <=
+line_p[9];
+        8'b1111_0111: word <= line_p[8];
+        8'b1111_1000: word <=
+line_p[7];
+        8'b1111_1001: word <= line_p[6];
+        8'b1111_1010: word <=
+line_p[5];
+        8'b1111_1011: word <= line_p[4];
+        8'b1111_1100: word <=
+line_p[3];
+        8'b1111_1101: word <= line_p[2];
+        8'b1111_1110: word <=
+line_p[1];
+        8'b1111_1111: word <= line_p[0];
+    endcase
+end
+
+always @(*)
+begin
+
+    case( { row, col } )
+        8'b0000_0000: word1 <=
+line_a1[15];
+        8'b0000_0001: word1 <= line_a1[14];
+        8'b0000_0010: word1 <=
+line_a1[13];
+        8'b0000_0011: word1 <= line_a1[12];
+        8'b0000_0100: word1 <=
+line_a1[11];
+        8'b0000_0101: word1 <= line_a1[10];
+        8'b0000_0110: word1 <=
+line_a1[9];
+        8'b0000_0111: word1 <= line_a1[8];
+        8'b0000_1000: word1 <=
+line_a1[7];
+        8'b0000_1001: word1 <= line_a1[6];
+        8'b0000_1010: word1 <=
+line_a1[5];
+        8'b0000_1011: word1 <= line_a1[4];
+        8'b0000_1100: word1 <=
+line_a1[3];
+        8'b0000_1101: word1 <= line_a1[2];
+        8'b0000_1110: word1 <=
+line_a1[1];
+        8'b0000_1111: word1 <= line_a1[0];
+
+
+        8'b0001_0000: word1 <= line_b1[15];
+        8'b0001_0001: word1 <=
+line_b1[14];
+        8'b0001_0010: word1 <= line_b1[13];
+        8'b0001_0011: word1 <=
+line_b1[12];
+        8'b0001_0100: word1 <= line_b1[11];
+        8'b0001_0101: word1 <=
+line_b1[10];
+        8'b0001_0110: word1 <= line_b1[9];
+        8'b0001_0111: word1 <=
+line_b1[8];
+        8'b0001_1000: word1 <= line_b1[7];
+        8'b0001_1001: word1 <=
+line_b1[6];
+        8'b0001_1010: word1 <= line_b1[5];
+        8'b0001_1011: word1 <=
+line_b1[4];
+        8'b0001_1100: word1 <= line_b1[3];
+        8'b0001_1101: word1 <=
+line_b1[2];
+        8'b0001_1110: word1 <= line_b1[1];
+        8'b0001_1111: word1 <=
+line_b1[0];
+
+        8'b0010_0000: word1 <=
+line_c1[15];
+        8'b0010_0001: word1 <= line_c1[14];
+        8'b0010_0010: word1 <=
+line_c1[13];
+        8'b0010_0011: word1 <= line_c1[12];
+        8'b0010_0100: word1 <=
+line_c1[11];
+        8'b0010_0101: word1 <= line_c1[10];
+        8'b0010_0110: word1 <=
+line_c1[9];
+        8'b0010_0111: word1 <= line_c1[8];
+        8'b0010_1000: word1 <=
+line_c1[7];
+        8'b0010_1001: word1 <= line_c1[6];
+        8'b0010_1010: word1 <=
+line_c1[5];
+        8'b0010_1011: word1 <= line_c1[4];
+        8'b0010_1100: word1 <=
+line_c1[3];
+        8'b0010_1101: word1 <= line_c1[2];
+        8'b0010_1110: word1 <=
+line_c1[1];
+        8'b0010_1111: word1 <= line_c1[0];
+
+
+        8'b0011_0000: word1 <= line_d1[15];
+        8'b0011_0001: word1 <=
+line_d1[14];
+        8'b0011_0010: word1 <= line_d1[13];
+        8'b0011_0011: word1 <=
+line_d1[12];
+        8'b0011_0100: word1 <= line_d1[11];
+        8'b0011_0101: word1 <=
+line_d1[10];
+        8'b0011_0110: word1 <= line_d1[9];
+        8'b0011_0111: word1 <=
+line_d1[8];
+        8'b0011_1000: word1 <= line_d1[7];
+        8'b0011_1001: word1 <=
+line_d1[6];
+        8'b0011_1010: word1 <= line_d1[5];
+        8'b0011_1011: word1 <=
+line_d1[4];
+        8'b0011_1100: word1 <= line_d1[3];
+        8'b0011_1101: word1 <=
+line_d1[2];
+        8'b0011_1110: word1 <= line_d1[1];
+        8'b0011_1111: word1 <=
+line_d1[0];
+
+        8'b0100_0000: word1 <=
+line_e1[15];
+        8'b0100_0001: word1 <= line_e1[14];
+        8'b0100_0010: word1 <=
+line_e1[13];
+        8'b0100_0011: word1 <= line_e1[12];
+        8'b0100_0100: word1 <=
+line_e1[11];
+        8'b0100_0101: word1 <= line_e1[10];
+        8'b0100_0110: word1 <=
+line_e1[9];
+        8'b0100_0111: word1 <= line_e1[8];
+        8'b0100_1000: word1 <=
+line_e1[7];
+        8'b0100_1001: word1 <= line_e1[6];
+        8'b0100_1010: word1 <=
+line_e1[5];
+        8'b0100_1011: word1 <= line_e1[4];
+        8'b0100_1100: word1 <=
+line_e1[3];
+        8'b0100_1101: word1 <= line_e1[2];
+        8'b0100_1110: word1 <=
+line_e1[1];
+        8'b0100_1111: word1 <= line_e1[0];
+
+
+        8'b0101_0000: word1 <= line_f1[15];
+        8'b0101_0001: word1 <=
+line_f1[14];
+        8'b0101_0010: word1 <= line_f1[13];
+        8'b0101_0011: word1 <=
+line_f1[12];
+        8'b0101_0100: word1 <= line_f1[11];
+        8'b0101_0101: word1 <=
+line_f1[10];
+        8'b0101_0110: word1 <= line_f1[9];
+        8'b0101_0111: word1 <=
+line_f1[8];
+        8'b0101_1000: word1 <= line_f1[7];
+        8'b0101_1001: word1 <=
+line_f1[6];
+        8'b0101_1010: word1 <= line_f1[5];
+        8'b0101_1011: word1 <=
+line_f1[4];
+        8'b0101_1100: word1 <= line_f1[3];
+        8'b0101_1101: word1 <=
+line_f1[2];
+        8'b0101_1110: word1 <= line_f1[1];
+        8'b0101_1111: word1 <=
+line_f1[0];
+
+        8'b0110_0000: word1 <=
+line_g1[15];
+        8'b0110_0001: word1 <= line_g1[14];
+        8'b0110_0010: word1 <=
+line_g1[13];
+        8'b0110_0011: word1 <= line_g1[12];
+        8'b0110_0100: word1 <=
+line_g1[11];
+        8'b0110_0101: word1 <= line_g1[10];
+        8'b0110_0110: word1 <=
+line_g1[9];
+        8'b0110_0111: word1 <= line_g1[8];
+        8'b0110_1000: word1 <=
+line_g1[7];
+        8'b0110_1001: word1 <= line_g1[6];
+        8'b0110_1010: word1 <=
+line_g1[5];
+        8'b0110_1011: word1 <= line_g1[4];
+        8'b0110_1100: word1 <=
+line_g1[3];
+        8'b0110_1101: word1 <= line_g1[2];
+        8'b0110_1110: word1 <=
+line_g1[1];
+        8'b0110_1111: word1 <= line_g1[0];
+
+
+        8'b0111_0000: word1 <= line_h1[15];
+        8'b0111_0001: word1 <=
+line_h1[14];
+        8'b0111_0010: word1 <= line_h1[13];
+        8'b0111_0011: word1 <=
+line_h1[12];
+        8'b0111_0100: word1 <= line_h1[11];
+        8'b0111_0101: word1 <=
+line_h1[10];
+        8'b0111_0110: word1 <= line_h1[9];
+        8'b0111_0111: word1 <=
+line_h1[8];
+        8'b0111_1000: word1 <= line_h1[7];
+        8'b0111_1001: word1 <=
+line_h1[6];
+        8'b0111_1010: word1 <= line_h1[5];
+        8'b0111_1011: word1 <=
+line_h1[4];
+        8'b0111_1100: word1 <= line_h1[3];
+        8'b0111_1101: word1 <=
+line_h1[2];
+        8'b0111_1110: word1 <= line_h1[1];
+        8'b0111_1111: word1 <=
+line_h1[0];
+
+        8'b1000_0000: word1 <=
+line_i1[15];
+        8'b1000_0001: word1 <= line_i1[14];
+        8'b1000_0010: word1 <=
+line_i1[13];
+        8'b1000_0011: word1 <= line_i1[12];
+        8'b1000_0100: word1 <=
+line_i1[11];
+        8'b1000_0101: word1 <= line_i1[10];
+        8'b1000_0110: word1 <=
+line_i1[9];
+        8'b1000_0111: word1 <= line_i1[8];
+        8'b1000_1000: word1 <=
+line_i1[7];
+        8'b1000_1001: word1 <= line_i1[6];
+        8'b1000_1010: word1 <=
+line_i1[5];
+        8'b1000_1011: word1 <= line_i1[4];
+        8'b1000_1100: word1 <=
+line_i1[3];
+        8'b1000_1101: word1 <= line_i1[2];
+        8'b1000_1110: word1 <=
+line_i1[1];
+        8'b1000_1111: word1 <= line_i1[0];
+
+
+        8'b1001_0000: word1 <= line_j1[15];
+        8'b1001_0001: word1 <=
+line_j1[14];
+        8'b1001_0010: word1 <= line_j1[13];
+        8'b1001_0011: word1 <=
+line_j1[12];
+        8'b1001_0100: word1 <= line_j1[11];
+        8'b1001_0101: word1 <=
+line_j1[10];
+        8'b1001_0110: word1 <= line_j1[9];
+        8'b1001_0111: word1 <=
+line_j1[8];
+        8'b1001_1000: word1 <= line_j1[7];
+        8'b1001_1001: word1 <=
+line_j1[6];
+        8'b1001_1010: word1 <= line_j1[5];
+        8'b1001_1011: word1 <=
+line_j1[4];
+        8'b1001_1100: word1 <= line_j1[3];
+        8'b1001_1101: word1 <=
+line_j1[2];
+        8'b1001_1110: word1 <= line_j1[1];
+        8'b1001_1111: word1 <=
+line_j1[0];
+
+        8'b1010_0000: word1 <=
+line_k1[15];
+        8'b1010_0001: word1 <= line_k1[14];
+        8'b1010_0010: word1 <=
+line_k1[13];
+        8'b1010_0011: word1 <= line_k1[12];
+        8'b1010_0100: word1 <=
+line_k1[11];
+        8'b1010_0101: word1 <= line_k1[10];
+        8'b1010_0110: word1 <=
+line_k1[9];
+        8'b1010_0111: word1 <= line_k1[8];
+        8'b1010_1000: word1 <=
+line_k1[7];
+        8'b1010_1001: word1 <= line_k1[6];
+        8'b1010_1010: word1 <=
+line_k1[5];
+        8'b1010_1011: word1 <= line_k1[4];
+        8'b1010_1100: word1 <=
+line_k1[3];
+        8'b1010_1101: word1 <= line_k1[2];
+        8'b1010_1110: word1 <=
+line_k1[1];
+        8'b1010_1111: word1 <= line_k1[0];
+
+
+        8'b1011_0000: word1 <= line_l1[15];
+        8'b1011_0001: word1 <=
+line_l1[14];
+        8'b1011_0010: word1 <= line_l1[13];
+        8'b1011_0011: word1 <=
+line_l1[12];
+        8'b1011_0100: word1 <= line_l1[11];
+        8'b1011_0101: word1 <=
+line_l1[10];
+        8'b1011_0110: word1 <= line_l1[9];
+        8'b1011_0111: word1 <=
+line_l1[8];
+        8'b1011_1000: word1 <= line_l1[7];
+        8'b1011_1001: word1 <=
+line_l1[6];
+        8'b1011_1010: word1 <= line_l1[5];
+        8'b1011_1011: word1 <=
+line_l1[4];
+        8'b1011_1100: word1 <= line_l1[3];
+        8'b1011_1101: word1 <=
+line_l1[2];
+        8'b1011_1110: word1 <= line_l1[1];
+        8'b1011_1111: word1 <=
+line_l1[0];
+
+        8'b1100_0000: word1 <=
+line_m1[15];
+        8'b1100_0001: word1 <= line_m1[14];
+        8'b1100_0010: word1 <=
+line_m1[13];
+        8'b1100_0011: word1 <= line_m1[12];
+        8'b1100_0100: word1 <=
+line_m1[11];
+        8'b1100_0101: word1 <= line_m1[10];
+        8'b1100_0110: word1 <=
+line_m1[9];
+        8'b1100_0111: word1 <= line_m1[8];
+        8'b1100_1000: word1 <=
+line_m1[7];
+        8'b1100_1001: word1 <= line_m1[6];
+        8'b1100_1010: word1 <=
+line_m1[5];
+        8'b1100_1011: word1 <= line_m1[4];
+        8'b1100_1100: word1 <=
+line_m1[3];
+        8'b1100_1101: word1 <= line_m1[2];
+        8'b1100_1110: word1 <=
+line_m1[1];
+        8'b1100_1111: word1 <= line_m1[0];
+
+
+        8'b1101_0000: word1 <= line_n1[15];
+        8'b1101_0001: word1 <=
+line_n1[14];
+        8'b1101_0010: word1 <= line_n1[13];
+        8'b1101_0011: word1 <=
+line_n1[12];
+        8'b1101_0100: word1 <= line_n1[11];
+        8'b1101_0101: word1 <=
+line_n1[10];
+        8'b1101_0110: word1 <= line_n1[9];
+        8'b1101_0111: word1 <=
+line_n1[8];
+        8'b1101_1000: word1 <= line_n1[7];
+        8'b1101_1001: word1 <=
+line_n1[6];
+        8'b1101_1010: word1 <= line_n1[5];
+        8'b1101_1011: word1 <=
+line_n1[4];
+        8'b1101_1100: word1 <= line_n1[3];
+        8'b1101_1101: word1 <=
+line_n1[2];
+        8'b1101_1110: word1 <= line_n1[1];
+        8'b1101_1111: word1 <=
+line_n1[0];
+
+        8'b1110_0000: word1 <=
+line_o1[15];
+        8'b1110_0001: word1 <= line_o1[14];
+        8'b1110_0010: word1 <=
+line_o1[13];
+        8'b1110_0011: word1 <= line_o1[12];
+        8'b1110_0100: word1 <=
+line_o1[11];
+        8'b1110_0101: word1 <= line_o1[10];
+        8'b1110_0110: word1 <=
+line_o1[9];
+        8'b1110_0111: word1 <= line_o1[8];
+        8'b1110_1000: word1 <=
+line_o1[7];
+        8'b1110_1001: word1 <= line_o1[6];
+        8'b1110_1010: word1 <=
+line_o1[5];
+        8'b1110_1011: word1 <= line_o1[4];
+        8'b1110_1100: word1 <=
+line_o1[3];
+        8'b1110_1101: word1 <= line_o1[2];
+        8'b1110_1110: word1 <=
+line_o1[1];
+        8'b1110_1111: word1 <= line_o1[0];
+
+
+        8'b1111_0000: word1 <= line_p1[15];
+        8'b1111_0001: word1 <=
+line_p1[14];
+        8'b1111_0010: word1 <= line_p1[13];
+        8'b1111_0011: word1 <=
+line_p1[12];
+        8'b1111_0100: word1 <= line_p1[11];
+        8'b1111_0101: word1 <=
+line_p1[10];
+        8'b1111_0110: word1 <= line_p1[9];
+        8'b1111_0111: word1 <=
+line_p1[8];
+        8'b1111_1000: word1 <= line_p1[7];
+        8'b1111_1001: word1 <=
+line_p1[6];
+        8'b1111_1010: word1 <= line_p1[5];
+        8'b1111_1011: word1 <=
+line_p1[4];
+        8'b1111_1100: word1 <= line_p1[3];
+        8'b1111_1101: word1 <=
+line_p1[2];
+        8'b1111_1110: word1 <= line_p1[1];
+        8'b1111_1111: word1 <=
+line_p1[0];
+    endcase
+end
+
+always @(*)begin
+
+    case( { row, col }
+)
+        8'b0000_0000: word2 <= line_a2[15];
+        8'b0000_0001: word2 <=
+line_a2[14];
+        8'b0000_0010: word2 <= line_a2[13];
+        8'b0000_0011: word2 <=
+line_a2[12];
+        8'b0000_0100: word2 <= line_a2[11];
+        8'b0000_0101: word2 <=
+line_a2[10];
+        8'b0000_0110: word2 <= line_a2[9];
+        8'b0000_0111: word2 <=
+line_a2[8];
+        8'b0000_1000: word2 <= line_a2[7];
+        8'b0000_1001: word2 <=
+line_a2[6];
+        8'b0000_1010: word2 <= line_a2[5];
+        8'b0000_1011: word2 <=
+line_a2[4];
+        8'b0000_1100: word2 <= line_a2[3];
+        8'b0000_1101: word2 <=
+line_a2[2];
+        8'b0000_1110: word2 <= line_a2[1];
+        8'b0000_1111: word2 <=
+line_a2[0];
+
+        8'b0001_0000: word2 <=
+line_b2[15];
+        8'b0001_0001: word2 <= line_b2[14];
+        8'b0001_0010: word2 <=
+line_b2[13];
+        8'b0001_0011: word2 <= line_b2[12];
+        8'b0001_0100: word2 <=
+line_b2[11];
+        8'b0001_0101: word2 <= line_b2[10];
+        8'b0001_0110: word2 <=
+line_b2[9];
+        8'b0001_0111: word2 <= line_b2[8];
+        8'b0001_1000: word2 <=
+line_b2[7];
+        8'b0001_1001: word2 <= line_b2[6];
+        8'b0001_1010: word2 <=
+line_b2[5];
+        8'b0001_1011: word2 <= line_b2[4];
+        8'b0001_1100: word2 <=
+line_b2[3];
+        8'b0001_1101: word2 <= line_b2[2];
+        8'b0001_1110: word2 <=
+line_b2[1];
+        8'b0001_1111: word2 <= line_b2[0];
+
+
+
+
+        8'b0010_0000: word2 <= line_c2[15];
+        8'b0010_0001: word2 <=
+line_c2[14];
+        8'b0010_0010: word2 <= line_c2[13];
+        8'b0010_0011: word2 <=
+line_c2[12];
+        8'b0010_0100: word2 <= line_c2[11];
+        8'b0010_0101: word2 <=
+line_c2[10];
+        8'b0010_0110: word2 <= line_c2[9];
+        8'b0010_0111: word2 <=
+line_c2[8];
+        8'b0010_1000: word2 <= line_c2[7];
+        8'b0010_1001: word2 <=
+line_c2[6];
+        8'b0010_1010: word2 <= line_c2[5];
+        8'b0010_1011: word2 <=
+line_c2[4];
+        8'b0010_1100: word2 <= line_c2[3];
+        8'b0010_1101: word2 <=
+line_c2[2];
+        8'b0010_1110: word2 <= line_c2[1];
+        8'b0010_1111: word2 <=
+line_c2[0];
+
+        8'b0011_0000: word2 <=
+line_d2[15];
+        8'b0011_0001: word2 <= line_d2[14];
+        8'b0011_0010: word2 <=
+line_d2[13];
+        8'b0011_0011: word2 <= line_d2[12];
+        8'b0011_0100: word2 <=
+line_d2[11];
+        8'b0011_0101: word2 <= line_d2[10];
+        8'b0011_0110: word2 <=
+line_d2[9];
+        8'b0011_0111: word2 <= line_d2[8];
+        8'b0011_1000: word2 <=
+line_d2[7];
+        8'b0011_1001: word2 <= line_d2[6];
+        8'b0011_1010: word2 <=
+line_d2[5];
+        8'b0011_1011: word2 <= line_d2[4];
+        8'b0011_1100: word2 <=
+line_d2[3];
+        8'b0011_1101: word2 <= line_d2[2];
+        8'b0011_1110: word2 <=
+line_d2[1];
+        8'b0011_1111: word2 <= line_d2[0];
+
+
+        8'b0100_0000: word2 <= line_e2[15];
+        8'b0100_0001: word2 <=
+line_e2[14];
+        8'b0100_0010: word2 <= line_e2[13];
+        8'b0100_0011: word2 <=
+line_e2[12];
+        8'b0100_0100: word2 <= line_e2[11];
+        8'b0100_0101: word2 <=
+line_e2[10];
+        8'b0100_0110: word2 <= line_e2[9];
+        8'b0100_0111: word2 <=
+line_e2[8];
+        8'b0100_1000: word2 <= line_e2[7];
+        8'b0100_1001: word2 <=
+line_e2[6];
+        8'b0100_1010: word2 <= line_e2[5];
+        8'b0100_1011: word2 <=
+line_e2[4];
+        8'b0100_1100: word2 <= line_e2[3];
+        8'b0100_1101: word2 <=
+line_e2[2];
+        8'b0100_1110: word2 <= line_e2[1];
+        8'b0100_1111: word2 <=
+line_e2[0];
+
+        8'b0101_0000: word2 <=
+line_f2[15];
+        8'b0101_0001: word2 <= line_f2[14];
+        8'b0101_0010: word2 <=
+line_f2[13];
+        8'b0101_0011: word2 <= line_f2[12];
+        8'b0101_0100: word2 <=
+line_f2[11];
+        8'b0101_0101: word2 <= line_f2[10];
+        8'b0101_0110: word2 <=
+line_f2[9];
+        8'b0101_0111: word2 <= line_f2[8];
+        8'b0101_1000: word2 <=
+line_f2[7];
+        8'b0101_1001: word2 <= line_f2[6];
+        8'b0101_1010: word2 <=
+line_f2[5];
+        8'b0101_1011: word2 <= line_f2[4];
+        8'b0101_1100: word2 <=
+line_f2[3];
+        8'b0101_1101: word2 <= line_f2[2];
+        8'b0101_1110: word2 <=
+line_f2[1];
+        8'b0101_1111: word2 <= line_f2[0];
+
+
+        8'b0110_0000: word2 <= line_g2[15];
+        8'b0110_0001: word2 <=
+line_g2[14];
+        8'b0110_0010: word2 <= line_g2[13];
+        8'b0110_0011: word2 <=
+line_g2[12];
+        8'b0110_0100: word2 <= line_g2[11];
+        8'b0110_0101: word2 <=
+line_g2[10];
+        8'b0110_0110: word2 <= line_g2[9];
+        8'b0110_0111: word2 <=
+line_g2[8];
+        8'b0110_1000: word2 <= line_g2[7];
+        8'b0110_1001: word2 <=
+line_g2[6];
+        8'b0110_1010: word2 <= line_g2[5];
+        8'b0110_1011: word2 <=
+line_g2[4];
+        8'b0110_1100: word2 <= line_g2[3];
+        8'b0110_1101: word2 <=
+line_g2[2];
+        8'b0110_1110: word2 <= line_g2[1];
+        8'b0110_1111: word2 <=
+line_g2[0];
+
+        8'b0111_0000: word2 <=
+line_h2[15];
+        8'b0111_0001: word2 <= line_h2[14];
+        8'b0111_0010: word2 <=
+line_h2[13];
+        8'b0111_0011: word2 <= line_h2[12];
+        8'b0111_0100: word2 <=
+line_h2[11];
+        8'b0111_0101: word2 <= line_h2[10];
+        8'b0111_0110: word2 <=
+line_h2[9];
+        8'b0111_0111: word2 <= line_h2[8];
+        8'b0111_1000: word2 <=
+line_h2[7];
+        8'b0111_1001: word2 <= line_h2[6];
+        8'b0111_1010: word2 <=
+line_h2[5];
+        8'b0111_1011: word2 <= line_h2[4];
+        8'b0111_1100: word2 <=
+line_h2[3];
+        8'b0111_1101: word2 <= line_h2[2];
+        8'b0111_1110: word2 <=
+line_h2[1];
+        8'b0111_1111: word2 <= line_h2[0];
+
+
+        8'b1000_0000: word2 <= line_i2[15];
+        8'b1000_0001: word2 <=
+line_i2[14];
+        8'b1000_0010: word2 <= line_i2[13];
+        8'b1000_0011: word2 <=
+line_i2[12];
+        8'b1000_0100: word2 <= line_i2[11];
+        8'b1000_0101: word2 <=
+line_i2[10];
+        8'b1000_0110: word2 <= line_i2[9];
+        8'b1000_0111: word2 <=
+line_i2[8];
+        8'b1000_1000: word2 <= line_i2[7];
+        8'b1000_1001: word2 <=
+line_i2[6];
+        8'b1000_1010: word2 <= line_i2[5];
+        8'b1000_1011: word2 <=
+line_i2[4];
+        8'b1000_1100: word2 <= line_i2[3];
+        8'b1000_1101: word2 <=
+line_i2[2];
+        8'b1000_1110: word2 <= line_i2[1];
+        8'b1000_1111: word2 <=
+line_i2[0];
+
+        8'b1001_0000: word2 <=
+line_j2[15];
+        8'b1001_0001: word2 <= line_j2[14];
+        8'b1001_0010: word2 <=
+line_j2[13];
+        8'b1001_0011: word2 <= line_j2[12];
+        8'b1001_0100: word2 <=
+line_j2[11];
+        8'b1001_0101: word2 <= line_j2[10];
+        8'b1001_0110: word2 <=
+line_j2[9];
+        8'b1001_0111: word2 <= line_j2[8];
+        8'b1001_1000: word2 <=
+line_j2[7];
+        8'b1001_1001: word2 <= line_j2[6];
+        8'b1001_1010: word2 <=
+line_j2[5];
+        8'b1001_1011: word2 <= line_j2[4];
+        8'b1001_1100: word2 <=
+line_j2[3];
+        8'b1001_1101: word2 <= line_j2[2];
+        8'b1001_1110: word2 <=
+line_j2[1];
+        8'b1001_1111: word2 <= line_j2[0];
+
+
+        8'b1010_0000: word2 <= line_k2[15];
+        8'b1010_0001: word2 <=
+line_k2[14];
+        8'b1010_0010: word2 <= line_k2[13];
+        8'b1010_0011: word2 <=
+line_k2[12];
+        8'b1010_0100: word2 <= line_k2[11];
+        8'b1010_0101: word2 <=
+line_k2[10];
+        8'b1010_0110: word2 <= line_k2[9];
+        8'b1010_0111: word2 <=
+line_k2[8];
+        8'b1010_1000: word2 <= line_k2[7];
+        8'b1010_1001: word2 <=
+line_k2[6];
+        8'b1010_1010: word2 <= line_k2[5];
+        8'b1010_1011: word2 <=
+line_k2[4];
+        8'b1010_1100: word2 <= line_k2[3];
+        8'b1010_1101: word2 <=
+line_k2[2];
+        8'b1010_1110: word2 <= line_k2[1];
+        8'b1010_1111: word2 <=
+line_k2[0];
+
+        8'b1011_0000: word2 <=
+line_l2[15];
+        8'b1011_0001: word2 <= line_l2[14];
+        8'b1011_0010: word2 <=
+line_l2[13];
+        8'b1011_0011: word2 <= line_l2[12];
+        8'b1011_0100: word2 <=
+line_l2[11];
+        8'b1011_0101: word2 <= line_l2[10];
+        8'b1011_0110: word2 <=
+line_l2[9];
+        8'b1011_0111: word2 <= line_l2[8];
+        8'b1011_1000: word2 <=
+line_l2[7];
+        8'b1011_1001: word2 <= line_l2[6];
+        8'b1011_1010: word2 <=
+line_l2[5];
+        8'b1011_1011: word2 <= line_l2[4];
+        8'b1011_1100: word2 <=
+line_l2[3];
+        8'b1011_1101: word2 <= line_l2[2];
+        8'b1011_1110: word2 <=
+line_l2[1];
+        8'b1011_1111: word2 <= line_l2[0];
+
+
+        8'b1100_0000: word2 <= line_m2[15];
+        8'b1100_0001: word2 <=
+line_m2[14];
+        8'b1100_0010: word2 <= line_m2[13];
+        8'b1100_0011: word2 <=
+line_m2[12];
+        8'b1100_0100: word2 <= line_m2[11];
+        8'b1100_0101: word2 <=
+line_m2[10];
+        8'b1100_0110: word2 <= line_m2[9];
+        8'b1100_0111: word2 <=
+line_m2[8];
+        8'b1100_1000: word2 <= line_m2[7];
+        8'b1100_1001: word2 <=
+line_m2[6];
+        8'b1100_1010: word2 <= line_m2[5];
+        8'b1100_1011: word2 <=
+line_m2[4];
+        8'b1100_1100: word2 <= line_m2[3];
+        8'b1100_1101: word2 <=
+line_m2[2];
+        8'b1100_1110: word2 <= line_m2[1];
+        8'b1100_1111: word2 <=
+line_m2[0];
+
+        8'b1101_0000: word2 <=
+line_n2[15];
+        8'b1101_0001: word2 <= line_n2[14];
+        8'b1101_0010: word2 <=
+line_n2[13];
+        8'b1101_0011: word2 <= line_n2[12];
+        8'b1101_0100: word2 <=
+line_n2[11];
+        8'b1101_0101: word2 <= line_n2[10];
+        8'b1101_0110: word2 <=
+line_n2[9];
+        8'b1101_0111: word2 <= line_n2[8];
+        8'b1101_1000: word2 <=
+line_n2[7];
+        8'b1101_1001: word2 <= line_n2[6];
+        8'b1101_1010: word2 <=
+line_n2[5];
+        8'b1101_1011: word2 <= line_n2[4];
+        8'b1101_1100: word2 <=
+line_n2[3];
+        8'b1101_1101: word2 <= line_n2[2];
+        8'b1101_1110: word2 <=
+line_n2[1];
+        8'b1101_1111: word2 <= line_n2[0];
+
+
+        8'b1110_0000: word2 <= line_o2[15];
+        8'b1110_0001: word2 <=
+line_o2[14];
+        8'b1110_0010: word2 <= line_o2[13];
+        8'b1110_0011: word2 <=
+line_o2[12];
+        8'b1110_0100: word2 <= line_o2[11];
+        8'b1110_0101: word2 <=
+line_o2[10];
+        8'b1110_0110: word2 <= line_o2[9];
+        8'b1110_0111: word2 <=
+line_o2[8];
+        8'b1110_1000: word2 <= line_o2[7];
+        8'b1110_1001: word2 <=
+line_o2[6];
+        8'b1110_1010: word2 <= line_o2[5];
+        8'b1110_1011: word2 <=
+line_o2[4];
+        8'b1110_1100: word2 <= line_o2[3];
+        8'b1110_1101: word2 <=
+line_o2[2];
+        8'b1110_1110: word2 <= line_o2[1];
+        8'b1110_1111: word2 <=
+line_o2[0];
+
+        8'b1111_0000: word2 <=
+line_p2[15];
+        8'b1111_0001: word2 <= line_p2[14];
+        8'b1111_0010: word2 <=
+line_p2[13];
+        8'b1111_0011: word2 <= line_p2[12];
+        8'b1111_0100: word2 <=
+line_p2[11];
+        8'b1111_0101: word2 <= line_p2[10];
+        8'b1111_0110: word2 <=
+line_p2[9];
+        8'b1111_0111: word2 <= line_p2[8];
+        8'b1111_1000: word2 <=
+line_p2[7];
+        8'b1111_1001: word2 <= line_p2[6];
+        8'b1111_1010: word2 <=
+line_p2[5];
+        8'b1111_1011: word2 <= line_p2[4];
+        8'b1111_1100: word2 <=
+line_p2[3];
+        8'b1111_1101: word2 <= line_p2[2];
+        8'b1111_1110: word2 <=
+line_p2[1];
+        8'b1111_1111: word2 <= line_p2[0];
+    endcase
+end
+
+always
+@(*)begin
+
+    case( { row, col } )
+        8'b0000_0000: word3 <=
+line_a3[15];
+        8'b0000_0001: word3 <= line_a3[14];
+        8'b0000_0010: word3 <=
+line_a3[13];
+        8'b0000_0011: word3 <= line_a3[12];
+        8'b0000_0100: word3 <=
+line_a3[11];
+        8'b0000_0101: word3 <= line_a3[10];
+        8'b0000_0110: word3 <=
+line_a3[9];
+        8'b0000_0111: word3 <= line_a3[8];
+        8'b0000_1000: word3 <=
+line_a3[7];
+        8'b0000_1001: word3 <= line_a3[6];
+        8'b0000_1010: word3 <=
+line_a3[5];
+        8'b0000_1011: word3 <= line_a3[4];
+        8'b0000_1100: word3 <=
+line_a3[3];
+        8'b0000_1101: word3 <= line_a3[2];
+        8'b0000_1110: word3 <=
+line_a3[1];
+        8'b0000_1111: word3 <= line_a3[0];
+
+
+        8'b0001_0000: word3 <= line_b3[15];
+        8'b0001_0001: word3 <=
+line_b3[14];
+        8'b0001_0010: word3 <= line_b3[13];
+        8'b0001_0011: word3 <=
+line_b3[12];
+        8'b0001_0100: word3 <= line_b3[11];
+        8'b0001_0101: word3 <=
+line_b3[10];
+        8'b0001_0110: word3 <= line_b3[9];
+        8'b0001_0111: word3 <=
+line_b3[8];
+        8'b0001_1000: word3 <= line_b3[7];
+        8'b0001_1001: word3 <=
+line_b3[6];
+        8'b0001_1010: word3 <= line_b3[5];
+        8'b0001_1011: word3 <=
+line_b3[4];
+        8'b0001_1100: word3 <= line_b3[3];
+        8'b0001_1101: word3 <=
+line_b3[2];
+        8'b0001_1110: word3 <= line_b3[1];
+        8'b0001_1111: word3 <=
+line_b3[0];
+
+        8'b0010_0000: word3 <=
+line_c3[15];
+        8'b0010_0001: word3 <= line_c3[14];
+        8'b0010_0010: word3 <=
+line_c3[13];
+        8'b0010_0011: word3 <= line_c3[12];
+        8'b0010_0100: word3 <=
+line_c3[11];
+        8'b0010_0101: word3 <= line_c3[10];
+        8'b0010_0110: word3 <=
+line_c3[9];
+        8'b0010_0111: word3 <= line_c3[8];
+        8'b0010_1000: word3 <=
+line_c3[7];
+        8'b0010_1001: word3 <= line_c3[6];
+        8'b0010_1010: word3 <=
+line_c3[5];
+        8'b0010_1011: word3 <= line_c3[4];
+        8'b0010_1100: word3 <=
+line_c3[3];
+        8'b0010_1101: word3 <= line_c3[2];
+        8'b0010_1110: word3 <=
+line_c3[1];
+        8'b0010_1111: word3 <= line_c3[0];
+
+
+        8'b0011_0000: word3 <= line_d3[15];
+        8'b0011_0001: word3 <=
+line_d3[14];
+        8'b0011_0010: word3 <= line_d3[13];
+        8'b0011_0011: word3 <=
+line_d3[12];
+        8'b0011_0100: word3 <= line_d3[11];
+        8'b0011_0101: word3 <=
+line_d3[10];
+        8'b0011_0110: word3 <= line_d3[9];
+        8'b0011_0111: word3 <=
+line_d3[8];
+        8'b0011_1000: word3 <= line_d3[7];
+        8'b0011_1001: word3 <=
+line_d3[6];
+        8'b0011_1010: word3 <= line_d3[5];
+        8'b0011_1011: word3 <=
+line_d3[4];
+        8'b0011_1100: word3 <= line_d3[3];
+        8'b0011_1101: word3 <=
+line_d3[2];
+        8'b0011_1110: word3 <= line_d3[1];
+        8'b0011_1111: word3 <=
+line_d3[0];
+
+        8'b0100_0000: word3 <=
+line_e3[15];
+        8'b0100_0001: word3 <= line_e3[14];
+        8'b0100_0010: word3 <=
+line_e3[13];
+        8'b0100_0011: word3 <= line_e3[12];
+        8'b0100_0100: word3 <=
+line_e3[11];
+        8'b0100_0101: word3 <= line_e3[10];
+        8'b0100_0110: word3 <=
+line_e3[9];
+        8'b0100_0111: word3 <= line_e3[8];
+        8'b0100_1000: word3 <=
+line_e3[7];
+        8'b0100_1001: word3 <= line_e3[6];
+        8'b0100_1010: word3 <=
+line_e3[5];
+        8'b0100_1011: word3 <= line_e3[4];
+        8'b0100_1100: word3 <=
+line_e3[3];
+        8'b0100_1101: word3 <= line_e3[2];
+        8'b0100_1110: word3 <=
+line_e3[1];
+        8'b0100_1111: word3 <= line_e3[0];
+
+
+        8'b0101_0000: word3 <= line_f3[15];
+        8'b0101_0001: word3 <=
+line_f3[14];
+        8'b0101_0010: word3 <= line_f3[13];
+        8'b0101_0011: word3 <=
+line_f3[12];
+        8'b0101_0100: word3 <= line_f3[11];
+        8'b0101_0101: word3 <=
+line_f3[10];
+        8'b0101_0110: word3 <= line_f3[9];
+        8'b0101_0111: word3 <=
+line_f3[8];
+        8'b0101_1000: word3 <= line_f3[7];
+        8'b0101_1001: word3 <=
+line_f3[6];
+        8'b0101_1010: word3 <= line_f3[5];
+        8'b0101_1011: word3 <=
+line_f3[4];
+        8'b0101_1100: word3 <= line_f3[3];
+        8'b0101_1101: word3 <=
+line_f3[2];
+        8'b0101_1110: word3 <= line_f3[1];
+        8'b0101_1111: word3 <=
+line_f3[0];
+
+        8'b0110_0000: word3 <=
+line_g3[15];
+        8'b0110_0001: word3 <= line_g3[14];
+        8'b0110_0010: word3 <=
+line_g3[13];
+        8'b0110_0011: word3 <= line_g3[12];
+        8'b0110_0100: word3 <=
+line_g3[11];
+        8'b0110_0101: word3 <= line_g3[10];
+        8'b0110_0110: word3 <=
+line_g3[9];
+        8'b0110_0111: word3 <= line_g3[8];
+        8'b0110_1000: word3 <=
+line_g3[7];
+        8'b0110_1001: word3 <= line_g3[6];
+        8'b0110_1010: word3 <=
+line_g3[5];
+        8'b0110_1011: word3 <= line_g3[4];
+        8'b0110_1100: word3 <=
+line_g3[3];
+        8'b0110_1101: word3 <= line_g3[2];
+        8'b0110_1110: word3 <=
+line_g3[1];
+        8'b0110_1111: word3 <= line_g3[0];
+
+
+        8'b0111_0000: word3 <= line_h3[15];
+        8'b0111_0001: word3 <=
+line_h3[14];
+        8'b0111_0010: word3 <= line_h3[13];
+        8'b0111_0011: word3 <=
+line_h3[12];
+        8'b0111_0100: word3 <= line_h3[11];
+        8'b0111_0101: word3 <=
+line_h3[10];
+        8'b0111_0110: word3 <= line_h3[9];
+        8'b0111_0111: word3 <=
+line_h3[8];
+        8'b0111_1000: word3 <= line_h3[7];
+        8'b0111_1001: word3 <=
+line_h3[6];
+        8'b0111_1010: word3 <= line_h3[5];
+        8'b0111_1011: word3 <=
+line_h3[4];
+        8'b0111_1100: word3 <= line_h3[3];
+        8'b0111_1101: word3 <=
+line_h3[2];
+        8'b0111_1110: word3 <= line_h3[1];
+        8'b0111_1111: word3 <=
+line_h3[0];
+
+        8'b1000_0000: word3 <=
+line_i3[15];
+        8'b1000_0001: word3 <= line_i3[14];
+        8'b1000_0010: word3 <=
+line_i3[13];
+        8'b1000_0011: word3 <= line_i3[12];
+        8'b1000_0100: word3 <=
+line_i3[11];
+        8'b1000_0101: word3 <= line_i3[10];
+        8'b1000_0110: word3 <=
+line_i3[9];
+        8'b1000_0111: word3 <= line_i3[8];
+        8'b1000_1000: word3 <=
+line_i3[7];
+        8'b1000_1001: word3 <= line_i3[6];
+        8'b1000_1010: word3 <=
+line_i3[5];
+        8'b1000_1011: word3 <= line_i3[4];
+        8'b1000_1100: word3 <=
+line_i3[3];
+        8'b1000_1101: word3 <= line_i3[2];
+        8'b1000_1110: word3 <=
+line_i3[1];
+        8'b1000_1111: word3 <= line_i3[0];
+
+
+        8'b1001_0000: word3 <= line_j3[15];
+        8'b1001_0001: word3 <=
+line_j3[14];
+        8'b1001_0010: word3 <= line_j3[13];
+        8'b1001_0011: word3 <=
+line_j3[12];
+        8'b1001_0100: word3 <= line_j3[11];
+        8'b1001_0101: word3 <=
+line_j3[10];
+        8'b1001_0110: word3 <= line_j3[9];
+        8'b1001_0111: word3 <=
+line_j3[8];
+        8'b1001_1000: word3 <= line_j3[7];
+        8'b1001_1001: word3 <=
+line_j3[6];
+        8'b1001_1010: word3 <= line_j3[5];
+        8'b1001_1011: word3 <=
+line_j3[4];
+        8'b1001_1100: word3 <= line_j3[3];
+        8'b1001_1101: word3 <=
+line_j3[2];
+        8'b1001_1110: word3 <= line_j3[1];
+        8'b1001_1111: word3 <=
+line_j3[0];
+
+        8'b1010_0000: word3 <=
+line_k3[15];
+        8'b1010_0001: word3 <= line_k3[14];
+        8'b1010_0010: word3 <=
+line_k3[13];
+        8'b1010_0011: word3 <= line_k3[12];
+        8'b1010_0100: word3 <=
+line_k3[11];
+        8'b1010_0101: word3 <= line_k3[10];
+        8'b1010_0110: word3 <=
+line_k3[9];
+        8'b1010_0111: word3 <= line_k3[8];
+        8'b1010_1000: word3 <=
+line_k3[7];
+        8'b1010_1001: word3 <= line_k3[6];
+        8'b1010_1010: word3 <=
+line_k3[5];
+        8'b1010_1011: word3 <= line_k3[4];
+        8'b1010_1100: word3 <=
+line_k3[3];
+        8'b1010_1101: word3 <= line_k3[2];
+        8'b1010_1110: word3 <=
+line_k3[1];
+        8'b1010_1111: word3 <= line_k3[0];
+
+
+        8'b1011_0000: word3 <= line_l3[15];
+        8'b1011_0001: word3 <=
+line_l3[14];
+        8'b1011_0010: word3 <= line_l3[13];
+        8'b1011_0011: word3 <=
+line_l3[12];
+        8'b1011_0100: word3 <= line_l3[11];
+        8'b1011_0101: word3 <=
+line_l3[10];
+        8'b1011_0110: word3 <= line_l3[9];
+        8'b1011_0111: word3 <=
+line_l3[8];
+        8'b1011_1000: word3 <= line_l3[7];
+        8'b1011_1001: word3 <=
+line_l3[6];
+        8'b1011_1010: word3 <= line_l3[5];
+        8'b1011_1011: word3 <=
+line_l3[4];
+        8'b1011_1100: word3 <= line_l3[3];
+        8'b1011_1101: word3 <=
+line_l3[2];
+        8'b1011_1110: word3 <= line_l3[1];
+        8'b1011_1111: word3 <=
+line_l3[0];
+
+        8'b1100_0000: word3 <=
+line_m3[15];
+        8'b1100_0001: word3 <= line_m3[14];
+        8'b1100_0010: word3 <=
+line_m3[13];
+        8'b1100_0011: word3 <= line_m3[12];
+        8'b1100_0100: word3 <=
+line_m3[11];
+        8'b1100_0101: word3 <= line_m3[10];
+        8'b1100_0110: word3 <=
+line_m3[9];
+        8'b1100_0111: word3 <= line_m3[8];
+        8'b1100_1000: word3 <=
+line_m3[7];
+        8'b1100_1001: word3 <= line_m3[6];
+        8'b1100_1010: word3 <=
+line_m3[5];
+        8'b1100_1011: word3 <= line_m3[4];
+        8'b1100_1100: word3 <=
+line_m3[3];
+        8'b1100_1101: word3 <= line_m3[2];
+        8'b1100_1110: word3 <=
+line_m3[1];
+        8'b1100_1111: word3 <= line_m3[0];
+
+
+        8'b1101_0000: word3 <= line_n3[15];
+        8'b1101_0001: word3 <=
+line_n3[14];
+        8'b1101_0010: word3 <= line_n3[13];
+        8'b1101_0011: word3 <=
+line_n3[12];
+        8'b1101_0100: word3 <= line_n3[11];
+        8'b1101_0101: word3 <=
+line_n3[10];
+        8'b1101_0110: word3 <= line_n3[9];
+        8'b1101_0111: word3 <=
+line_n3[8];
+        8'b1101_1000: word3 <= line_n3[7];
+        8'b1101_1001: word3 <=
+line_n3[6];
+        8'b1101_1010: word3 <= line_n3[5];
+        8'b1101_1011: word3 <=
+line_n3[4];
+        8'b1101_1100: word3 <= line_n3[3];
+        8'b1101_1101: word3 <=
+line_n3[2];
+        8'b1101_1110: word3 <= line_n3[1];
+        8'b1101_1111: word3 <=
+line_n3[0];
+
+        8'b1110_0000: word3 <=
+line_o3[15];
+        8'b1110_0001: word3 <= line_o3[14];
+        8'b1110_0010: word3 <=
+line_o3[13];
+        8'b1110_0011: word3 <= line_o3[12];
+        8'b1110_0100: word3 <=
+line_o3[11];
+        8'b1110_0101: word3 <= line_o3[10];
+        8'b1110_0110: word3 <=
+line_o3[9];
+        8'b1110_0111: word3 <= line_o3[8];
+        8'b1110_1000: word3 <=
+line_o3[7];
+        8'b1110_1001: word3 <= line_o3[6];
+        8'b1110_1010: word3 <=
+line_o3[5];
+        8'b1110_1011: word3 <= line_o3[4];
+        8'b1110_1100: word3 <=
+line_o3[3];
+        8'b1110_1101: word3 <= line_o3[2];
+        8'b1110_1110: word3 <=
+line_o3[1];
+        8'b1110_1111: word3 <= line_o3[0];
+
+
+        8'b1111_0000: word3 <= line_p3[15];
+        8'b1111_0001: word3 <=
+line_p3[14];
+        8'b1111_0010: word3 <= line_p3[13];
+        8'b1111_0011: word3 <=
+line_p3[12];
+        8'b1111_0100: word3 <= line_p3[11];
+        8'b1111_0101: word3 <=
+line_p3[10];
+        8'b1111_0110: word3 <= line_p3[9];
+        8'b1111_0111: word3 <=
+line_p3[8];
+        8'b1111_1000: word3 <= line_p3[7];
+        8'b1111_1001: word3 <=
+line_p3[6];
+        8'b1111_1010: word3 <= line_p3[5];
+        8'b1111_1011: word3 <=
+line_p3[4];
+        8'b1111_1100: word3 <= line_p3[3];
+        8'b1111_1101: word3 <=
+line_p3[2];
+        8'b1111_1110: word3 <= line_p3[1];
+        8'b1111_1111: word3 <=
+line_p3[0];
+    endcase
+end
+endmodule
+
+
+
+
+        //////////////
+        ///keyboard///
+        //////////////
+module
+keyboard( clk, reset, KCLK, KDAT, DATA);
+
+input clk, reset;
+input KCLK,
+KDAT;
+output [7:0] DATA;
+
+reg        c_state;
+reg        n_state;
+reg [3:0]
+ counter;
+reg [7:0]  DATA;
+reg [21:0] R;
+
+wire check =
+R[1]^R[2]^R[3]^R[4]^R[5]^R[6]^R[7]^R[8]^R[9];
+
+always@(posedge clk or posedge
+reset)
+begin
+    if(reset)
+    begin
+        c_state <= 1'b0;
+        n_state
+<= 1'b0;
+    end
+    else
+    begin
+        c_state <= n_state;
+
+ n_state <= KCLK;
+    end
+end
+
+always@(posedge clk or posedge reset)
+begin
+
+ if(reset)
+        R <= 22'b11_00000000_0_11_00000000_0;
+    else
+    begin
+
+       case({c_state, n_state})
+            2'b10:R <= {KDAT, R[21:1]};
+
+       default:R <= R;
+        endcase
+    end
+end
+
+always@(posedge clk or
+posedge reset)
+begin
+    if(reset)
+        counter <= 4'd0;
+    else
+if(counter==4'd10)
+        counter <= 4'd0;
+    else
+        counter <=
+counter +1;
+end
+
+always@(posedge clk or posedge reset)
+begin
+    if(reset)
+
+     DATA <= 8'd0;
+    else if(counter==4'd0&&check==1'b1)
+    begin
+
+ if(R[8:1]==8'hf0)
+            DATA <= 8'd0;
+        else
+            DATA <=
+R[19:12];
+    end
+    else
+        DATA <= DATA;
+end
+
+endmodule
+
+
+

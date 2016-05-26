@@ -1,0 +1,53 @@
+module ALU(OUT, A, B, C, MODE);
+        input  [3:0]A,B,C;
+        input  [1:0]MODE;
+        output OUT;
+
+        wire [12:0]OUT;
+
+assign OUT =(MODE==0)? A+B+C : (MODE==1)? A-B-C :(MODE==2)? A*B*C :
+(60*A+6*B+2*C);
+endmodule
+
+
+//bonus
+
+
+
+
+module BINGO(IN1,IN2,IN3,IN4,IN5,OUT);
+    input  [1:0]IN1,IN2,IN3,IN4,IN5;
+    output OUT;
+
+    wire OUT;
+    assign OUT = (IN1==IN2)? (IN2==IN3)? (IN3==IN4)? (IN4==IN5)? 1:0:0:0:0;
+
+
+endmodule
+
+module BG(//input
+          IN_11,IN_12,IN_13,IN_14,IN_15,
+          IN_21,IN_22,IN_23,IN_24,IN_25,
+          IN_31,IN_32,IN_33,IN_34,IN_35,
+          IN_41,IN_42,IN_43,IN_44,IN_45,
+          IN_51,IN_52,IN_53,IN_54,IN_55,
+          //output
+          OUT,
+          ALL,
+          ZERO,
+          HORIZONTAL,
+          VERTICAL,
+          DIAGONAL
+          );
+    input  [1:0]IN_11,IN_12,IN_13,IN_14,IN_15,
+                IN_21,IN_22,IN_23,IN_24,IN_25,
+                IN_31,IN_32,IN_33,IN_34,IN_35,
+                IN_41,IN_42,IN_43,IN_44,IN_45,
+                IN_51,IN_52,IN_53,IN_54,IN_55;
+    output [3:0]OUT;
+    output [2:0]ALL,ZERO,HORIZONTAL,VERTICAL;
+    output [1:0]DIAGONAL;
+
+endmodule
+
+

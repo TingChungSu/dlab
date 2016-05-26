@@ -1,0 +1,324 @@
+//Total cell area:          5323.046426
+
+module ROOT(IN,OUT1);
+input   [7:0]   IN;
+output  [3:0]   OUT1;
+assign  OUT1 =(IN==0) ? 0 :
+              (IN<4)  ? 1 :
+              (IN<9)  ? 2 :
+              (IN<16) ? 3 :
+              (IN<25) ? 4 :
+              (IN<36) ? 5 :
+              (IN<49) ? 6 :
+              (IN<64) ? 7 :
+              (IN<81) ? 8 :
+              (IN<100)? 9 :
+              (IN<121)? 10 :
+              (IN<144)? 11 :
+              (IN<169)? 12 :
+              (IN<196)? 13 :
+              (IN<225)? 14 :15;
+endmodule
+
+module FTD(
+    OUT_VALID,OUT,
+    CLK, RESET, IN_VALID,IN
+);
+
+input           CLK,RESET,IN_VALID,IN;
+output  reg     OUT_VALID;
+output  [3:0]   OUT;
+reg     [3:0]   COUNTER,X1,Y1,Z1,X2,Y2,Z2,DECOUNT,A1,A2,A3;
+reg     [7:0]   DE,B1,B2,B3,B4;
+reg     [1:0]   CT;
+reg             TABLE;
+ROOT R1(B4,OUT);
+
+always@(posedge CLK)
+begin
+    if(RESET || (!IN_VALID && OUT_VALID))  begin
+        DECOUNT     <=0;
+        COUNTER     <=0;
+        OUT_VALID   <=0;
+        DE          <=0;
+        CT          <=0;
+        X1<=0;X2<=0;Y1<=0;Y2<=0;Z1<=0;Z2<=0;
+    end
+    else        begin
+        if(OUT_VALID)
+            OUT_VALID <=0;
+
+        if(CT==1)       begin
+            CT  <=2;
+            case (A1)
+             0:B1<=0;
+             1:B1<=1;
+             2:B1<=4;
+             3:B1<=9;
+             4:B1<=16;
+             5:B1<=25;
+             6:B1<=36;
+             7:B1<=49;
+             8:B1<=64;
+             9:B1<=81;
+            endcase
+            case (A2)
+             0:B2<=0;
+             1:B2<=1;
+             2:B2<=4;
+             3:B2<=9;
+             4:B2<=16;
+             5:B2<=25;
+             6:B2<=36;
+             7:B2<=49;
+             8:B2<=64;
+             9:B2<=81;
+            endcase
+            case (A3)
+             0:B3<=0;
+             1:B3<=1;
+             2:B3<=4;
+             3:B3<=9;
+             4:B3<=16;
+             5:B3<=25;
+             6:B3<=36;
+             7:B3<=49;
+             8:B3<=64;
+             9:B3<=81;
+            endcase
+        end
+        if(CT==2)       begin
+            B4          <=B1+B2+B3;
+            OUT_VALID   <=1;
+            CT          <=0;
+        end
+
+        if(DECOUNT == 6)    begin
+            DECOUNT     <=3;
+            CT          <=1;
+            if(X1>X2)   A1<=X1-X2;
+            else        A1<=X2-X1;
+            if(Y1>Y2)   A2<=Y1-Y2;
+            else        A2<=Y2-Y1;
+            if(Z1>Z2)   A3<=Z1-Z2;
+            else        A3<=Z2-Z1;
+        end
+
+        if(COUNTER == 0 && IN_VALID)   begin
+            TABLE   <= IN;
+            COUNTER <= COUNTER+1;
+        end
+
+        if(COUNTER == 1 && IN_VALID)   begin
+            if(TABLE)    begin
+                DE[7]   <= IN;
+                COUNTER <=  COUNTER+1;
+            end
+            else    begin
+                if(IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    Z2  <= 0;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[7]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+        if(COUNTER == 2 && IN_VALID)   begin
+            if(TABLE)    begin
+                if(IN && !DE[7])  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 3;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[6]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+            else    begin
+                if(IN)  begin
+                    COUNTER <= 1;
+                    DECOUNT <= DECOUNT+1;
+                    Z2  <= 1;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[6]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+
+        if(COUNTER == 3 && IN_VALID)   begin
+            if(TABLE)    begin
+                if(IN && !DE[7] && !DE[6])  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 2;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(!IN && DE[7] && !DE[6]) begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 4;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(!IN && DE[7] && DE[6]) begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 8;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(IN && DE[7] && DE[6]) begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 9;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[5]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+            else    begin
+                if(!IN && !DE[6] && !DE[7])  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 2;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[5]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+
+        if(COUNTER == 4 && IN_VALID)   begin
+            if(TABLE)    begin
+                if(!DE[7] && !DE[6] && !DE[5] && !IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 0;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(!DE[7] && !DE[6] && !DE[5] && IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 1;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(DE[7] && !DE[6] && DE[5] && IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 7;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[4]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+            else    begin
+                    DE[4]   <= IN;
+                    COUNTER <=  COUNTER+1;
+            end
+        end
+
+        if(COUNTER == 5 && IN_VALID)   begin
+            if(TABLE)    begin
+                if(DE[7] && !DE[6] && DE[5] && !DE[4] && !IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 5;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 6;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+            end
+            else    begin
+                if(!DE[7] && !DE[6] && DE[5] && !DE[4] && !IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 3;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(!DE[7] && !DE[6] && DE[5] && !DE[4] && IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 4;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else if(!DE[7] && !DE[6] && DE[5] && DE[4] && !IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 5;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[3]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+
+        if(COUNTER == 6 && IN_VALID)   begin
+            if(!TABLE)    begin
+                if(!DE[7] && !DE[6] && DE[5] && DE[4] && DE[3] && IN)   begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 9;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[2]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+
+        if(COUNTER == 7 && IN_VALID)   begin
+            if(!TABLE)    begin
+                if(!DE[7] && !DE[6] && DE[5] && DE[4] && DE[3] && !DE[2] &&
+!IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 6;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DE[1]   <= IN;
+                    COUNTER <=  COUNTER+1;
+                end
+            end
+        end
+
+        if(COUNTER == 8 && IN_VALID)   begin
+            if(!TABLE)    begin
+                if(!DE[7] && !DE[6] && DE[5] && DE[4] && DE[3] && !DE[2] &&
+DE[1] && !IN)  begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 7;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+                else    begin
+                    DECOUNT <= DECOUNT+1;
+                    COUNTER <= 1;
+                    Z2  <= 8;Y2  <= Z2;X2  <= Y2;Z1  <= X2;Y1  <= Z1;X1  <=
+Y1;
+                end
+            end
+        end
+    end
+end
+endmodule
+
